@@ -28,6 +28,12 @@ Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.h
 
 This sentence has now been removed.
 
+### Minor comments and questions
+
+> There was a comment about making the ZIP comment null-terminated. This is extraneous and should be removed.
+
+This was indeed erroneous and had initially been [removed](https://github.com/ome/ngff/pull/316/changes/75d0f4640c1685e07d7fce2d33f36ee1ebd6b5a3). An accidental [regression](https://github.com/ome/ngff/pull/316/commits/657b3345b82997b2cd5cd0dc17eca7ed93e2d342) occurred during the merge, which has since been [hot-fixed](https://github.com/ome/ngff/commit/355530782eb2405a9b1feaea331ebe47cbbe6033) in the current version.
+
 ## Comment 2
 
 Response to [comment 2](https://ngff.openmicroscopy.org/rfc/9/comments/2/index.html) by Joost de Folter, BioImaging-NL.
