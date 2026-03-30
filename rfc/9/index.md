@@ -109,7 +109,6 @@ To facilitate efficient storage and access of OME-Zarr zip files, a set of essen
 
 This RFC explicitly prohibits embedding an OME-Zarr zip file as subhierarchy of a parent OME-Zarr hierarchy.
 In particular this prohibits "recursive zipping", the embedding of an OME-Zarr zip file within a parent OME-Zarr zip file.
-This restriction may be revised in the future, especially in the light of the "collections" RFC.
 
 Furthermore, this RFC prohibits splitting up the ZIP archive into multiple files ("multi-volume archives"), in favor of directory-backed OME-Zarr and Zarr's sharding codec.
 
