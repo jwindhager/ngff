@@ -18,6 +18,16 @@ Response to [review 3](https://ngff.openmicroscopy.org/rfc/9/reviews/3/index.htm
 
 Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.html) by Matt McCormick, Fideus Labs LLC.
 
+### Collections RFC reference
+
+> The sentence:
+> 
+> > This restriction may be revised in the future, especially in the light of the "collections" RFC.
+> 
+> is confusing in this context. The "collections" RFC is not yet defined, and the connection to allowing embedded OME-Zarr zip files is unclear. We suggest removing this sentence to avoid confusion.
+
+This sentence has now been removed.
+
 ## Comment 2
 
 Response to [comment 2](https://ngff.openmicroscopy.org/rfc/9/comments/2/index.html) by Joost de Folter, BioImaging-NL.
