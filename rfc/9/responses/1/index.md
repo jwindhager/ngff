@@ -39,3 +39,7 @@ Response to [comment 5](https://ngff.openmicroscopy.org/rfc/9/comments/5/index.h
 > The proposed new section of the specification uses the term "SHALL", which is so far not used elsewhere in the specification. Since according to IETF RFC 2119, SHALL is synonymous to MUST, and MUST is the term used in the rest of the specification, this should be replaced.
 
 This suggestion has now been adopted.
+
+> Duplication of "the" in "The ZIP file MUST contain the the OME-Zarr's root-level zarr.json."
+
+This typo has now been corrected.
