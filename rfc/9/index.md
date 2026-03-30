@@ -134,8 +134,8 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 
 1. The ZIP file MUST contain exactly one OME-Zarr hierarchy.
 2. The root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy. The ZIP file MUST contain the the OME-Zarr's root-level `zarr.json`.
-3. OME-Zarr zip files SHALL NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
-4. OME-Zarr zip files SHALL NOT be split into multiple parts.
+3. OME-Zarr zip files MUST NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
+4. OME-Zarr zip files MUST NOT be split into multiple parts.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED:
 
