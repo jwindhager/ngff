@@ -338,6 +338,7 @@ As mentioned by the authors, performance aspects of storing raster image data in
 This proposal adds a new feature to the OME-Zarr specification.
 As such, it is fully backwards-compatible, but not forwards-compatible.
 Implementations are expected to adopt the added support for OME-Zarr zip files.
+This RFC applies only to OME-Zarr v0.5 and later, which dependend on Zarr version 3.
 
 ## Testing
 
