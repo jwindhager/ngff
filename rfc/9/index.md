@@ -83,11 +83,27 @@ Specifically:
 - Define an OME-Zarr-specific file extension for OME-Zarr zip files: `.ozx`.
 
 To minimize implementation effort and maximize compatibility, this RFC proposes a concrete archive file format as a single-file OME-Zarr storage container.
-The ZIP archive file format was chosen for its simplicity, widespread adoption (e.g. on-board tooling of various operating systems, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory.
-Considering the intended use cases for zipped OME-Zarr, these advantages were considered to outweigh disadvantages such as limitations of the ZIP archive file format in efficiently writing and accessing file contents.
+
+### The choice of ZIP
+The ZIP archive file format was chosen for its simplicity, widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage (see _Proposal_ section).
+
+Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .odt, .ods, .odg).
+
+Since widespread adoption of single-file OME-Zarr across languages and tools is a primary goal of this RFC (see _Overview_), the choice of ZIP (over e.g. a bespoke binary format, see _Alternatives_ below) was weighed specifically against that goal:
+
+- **Widespread, low-effort implementation support.** ZIP has near-ubiquitous library support across programming languages, so adding OME-Zarr zip file support is comparatively cheap for existing and new OME-Zarr implementations. Several implementations (e.g. zarr-python, tensorstore, zarrita.js) already had ZIP support before this RFC (see _Implementation_ section below), which this RFC takes as evidence that this low effort holds in practice.
+- **Low effort scales from minimal to full-featured.** This RFC keeps the set of strict (MUST) requirements small (see _Specification_ section below), while most performance-related guidance is RECOMMENDED rather than required. A minimal, spec-compliant reader/writer is therefore cheap to build, and prototypes have shown that a fully recommendation-compliant writer is feasible with only moderate additional complexity, i.e. there is no large cliff between minimal and full-featured support.
+- **Chunked access on local and remote stores alike.** The central directory enables efficient partial reads not just on local file systems, but also on HTTP(S), S3, and GCS object stores via range requests, matching how OME-Zarr is already accessed today.
+- **OME-Zarr zip files are expected to be produced primarily by OME-Zarr-aware tooling**, not hand-zipped by end users with generic tools. The low implementation effort described above is intended to make it easy for such tools to adopt OME-Zarr zip file support, rather than to optimize for manual, generic-ZIP-tool-based workflows.
+
+Unlike ZIP, a bespoke, purpose-built binary format would need to be implemented essentially from scratch, without existing libraries to build on, in every language and toolkit that wants to support single-file OME-Zarr.
+This RFC weighs that additional per-implementation effort, and the resulting risk to widespread adoption, higher than the implementation-elegance benefits (e.g. a single, simpler reader/writer code path) that a bespoke format could offer.
+
+Considering the intended use cases for zipped OME-Zarr, the advantages discussed above were considered to outweigh the disadvantages of the ZIP archive file format, such as its limitations in efficiently writing and accessing file contents (see _Drawbacks, risks, alternatives, and unknowns_ section below).
+
+### Configuring ZIP for OME-Zarr
 ZIP archives are traditionally associated with deflate compression which would have redundancy with the per-chunk compression existing in Zarr.
 Changes in the size of files and compressed chunks could lead to significant fragmentation within a ZIP archive.
-Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .odt, .ods, .odg).
 
 To enable the intended user experience (e.g. avoid additional prompting of users when opening OME-Zarr zip files), the location of the OME-Zarr root relative to the ZIP archive root needs to be specified.
 In order to avoid inconsistencies when renaming OME-Zarr zip files, this RFC proposes to require the ZIP archive root to coincide with the OME-Zarr root directory.
@@ -203,9 +219,21 @@ Socialization: see Prior art and references; the draft was further discussed amo
 
 ## Implementation
 
+### Converters, validators
 - A first implementation has been [prototyped](https://github.com/ome/ngff/pull/316#issuecomment-3302456557) by one of the coauthors.
-- A [neuroglancer view](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C927%5D%2C%22window%22:%5B0%2C1159%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B25%2C824%5D%2C%22window%22:%5B0%2C1025%5D%7D%2C%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%7D) of the [generated data](https://static.webknossos.org/misc/6001240.ozx) has kindly been [made available](https://github.com/ome/ngff/pull/316#issuecomment-3302595684) by Davis Bennett.
 - [ozx-tck](https://github.com/clbarnes/ozx-tck) is a toolkit to validate existing .ozx files and generate valid, warning, and error test cases.
+- [ngff-zarr](https://ngff-zarr.readthedocs.io/en/latest/) is a Python-based toolkit for working with .ozx files.
+
+### Viewers
+- [Neuroglancer](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C927%5D%2C%22window%22:%5B0%2C1159%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B25%2C824%5D%2C%22window%22:%5B0%2C1025%5D%7D%2C%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%7D) of the [generated data](https://static.webknossos.org/misc/6001240.ozx) has kindly been [made available](https://github.com/ome/ngff/pull/316#issuecomment-3302595684) by Davis Bennett.
+- [WEBKNOSSOS](https://github.com/scalableminds/webknossos/pull/9738) is a web-based viewing and annotation platform that supports .ozx files.
+
+### Zarr libraries
+- [zarr-python](https://github.com/zarr-developers/zarr-python) has a ZipStore.
+- [zarr-java](https://github.com/zarr-developers/zarr-java) has OME-Zarr metadata support and a ZipStore, which adheres to the RFC-9 specification.
+- [zarrita.js](https://github.com/manzt/zarrita.js) is a JavaScript library for reading and writing OME-Zarr files, including .ozx files.
+- [zarrs](https://github.com/zarrs/zarrs_zip) has a ZipStore and a [converter for .ozx](https://github.com/clbarnes/ozx).
+- [tensorstore](https://google.github.io/tensorstore/kvstore/zip/index.html) has a ZipFileStore.
 
 
 
@@ -251,12 +279,16 @@ Alternatives:
 - **Do not specify a single-file variant** of OME-Zarr.
   Drawbacks of this alternative were discussed extensively in the _Background_ section of this RFC.
 - **Use HDF5 or a similar generic single-file container format** as storage backend instead of Zarr.
-  However, creating a "completely new" file format (e.g. "OME-HDF5"; as opposed to building upon OME-Zarr) would harm the standardization efforts of the OME-NGFF community.
+  However, creating a "completely new" file format (e.g. "OME-HDF5"; as opposed to building upon OME-Zarr) would harm the standardization efforts of the OME-NGFF community. Additionally, library support for HDF5 is currently not optimized for remote storage, which is a requirement for the use cases of OME-Zarr.
 - **Use TIFF as storage backend** instead of Zarr, e.g. with the `zarr.json` contents embedded in the `ImageDescription` tag, and optionally appended with a Zarr shard index.
   However, this would similarly harm aforementioned standardization efforts and would further restrict file contents to single volumes.
 - **Use an archive file format other than ZIP**.
   Among other reasons, the ZIP format was chosen for its widespread adoption and support for chunked file access (see _Proposal_ section).
-  Other widely used formats such as TAR could possibly be adapted to enable chunked file access, but the gained advantages over ZIP were not considered to outweigh the required specification complexity and additional implementation effort.
+  Other widely used formats, such as TAR, could possibly be adapted to enable chunked file access, but the gained advantages over ZIP were not considered to outweigh the required specification complexity and additional implementation effort. In particular, TAR does not have a central directory, which is required for efficient random access to file contents.
+- **Use a custom, purpose-built binary format** instead of an existing container format.
+  Such a format could minimize complexity by embedding structural (e.g. chunk/shard offset) metadata up front, tailored specifically to OME-Zarr, and would only require a single reader/writer code path, avoiding some of the disadvantages of the ZIP format discussed above.
+  However, unlike ZIP, it would need to be implemented essentially from scratch, without existing libraries to build on, in every language and toolkit intending to support single-file OME-Zarr.
+  This RFC weighs the resulting cost to widespread adoption higher than the implementation-elegance gained this way (see _Proposal_ section).
 - **Address the single-file issue on the Zarr-level**, e.g. by adding a ZipStore to the Zarr v3 specification.
   However, this likely would not cover all aspects proposed in this PR (e.g. file extension, ZIP restrictions) and it is unclear if and when ongoing efforts in this direction will be successful.
   If a ZipStore is added to the Zarr specification after acceptance of this RFC, the OME-Zarr specification can be amended as necessary at a later stage.
@@ -338,6 +370,7 @@ As mentioned by the authors, performance aspects of storing raster image data in
 This proposal adds a new feature to the OME-Zarr specification.
 As such, it is fully backwards-compatible, but not forwards-compatible.
 Implementations are expected to adopt the added support for OME-Zarr zip files.
+This RFC applies only to OME-Zarr v0.5 and later, which dependend on Zarr version 3.
 
 ## Testing
 
