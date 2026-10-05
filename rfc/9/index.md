@@ -113,7 +113,9 @@ Potential problems (e.g. loss of data) resulting from "accidentally" extracting 
 To facilitate efficient storage and access of OME-Zarr zip files, a set of essential ZIP/Zarr parameters are recommended in this RFC:
 
 - Use the ZIP64 format.
-  This is the default in most modern tooling and enables the creation of single-file OME-Zarr larger than 4 GiB.
+  ZIP64 is required once a ZIP archive exceeds 4 GiB, contains more than 65,535 entries, or has entries at offsets beyond 4 GiB.
+  Using ZIP64 from the start, at the cost of a few extra bytes per entry, allows OME-Zarr zip files to grow beyond these limits without a change in format.
+  This is a recommendation rather than a requirement because not all ZIP libraries currently offer an option to write ZIP64 for small archives; OME-Zarr zip files that do not use ZIP64 remain valid.
 - Disable ZIP-level compression.
   This avoids unnecessary compression of already compressed data (e.g. when using Zarr compression codecs) and makes it easier to directly conduct partial reads of the ZIP archive.
 - Use the Zarr sharding codec.

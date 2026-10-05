@@ -6,6 +6,24 @@
 
 Response to [review 1](https://ngff.openmicroscopy.org/rfc/9/reviews/1/index.html) by Pete Bankhead, University of Edinburgh.
 
+### Significant comments and questions
+
+#### Use of ZIP64
+
+<!-- TODO: add the verbatim quote from review 1 here (reviewer asks why ZIP64 is recommended irrespective of file size and suggests SHOULD -> MAY) -->
+
+Thank you for raising this.
+The recommendation is a SHOULD, not a MUST, so OME-Zarr zip files that do not use ZIP64 remain valid.
+We acknowledge that not all ZIP libraries currently offer an option to write ZIP64 for small archives, which is the main reason ZIP64 is not required.
+
+We nevertheless want to actively encourage ZIP64.
+We expect OME-Zarr datasets stored in zip files to keep growing.
+ZIP64 is required once an archive exceeds 4 GiB, contains more than 65,535 entries, or has offsets beyond 4 GiB; the entry limit in particular can be reached by an unsharded Zarr hierarchy well below 4 GiB.
+Using ZIP64 from the start lets datasets cross these thresholds smoothly, at a cost of a few bytes per entry that is small compared to common dataset sizes.
+It also means that readers' ZIP64 code paths are exercised routinely rather than first encountered on large files.
+
+We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and have expanded the corresponding text in the _Proposal_ section to state the thresholds and the reason it is not a requirement.
+
 ### Minor comments and questions
 
 #### Image preview
