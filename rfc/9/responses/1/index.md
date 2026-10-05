@@ -6,11 +6,21 @@
 
 Response to [review 1](https://ngff.openmicroscopy.org/rfc/9/reviews/1/index.html) by Pete Bankhead, University of Edinburgh.
 
-### Significant comments and questions
+### Minor comments and questions
 
 #### Use of ZIP64
 
-<!-- TODO: add the verbatim quote from review 1 here (reviewer asks why ZIP64 is recommended irrespective of file size and suggests SHOULD -> MAY) -->
+> 1. The ZIP64 format extension SHOULD be used, irrespective of the ZIP file size.
+>
+> I'm not familiar enough with ZIP to understand the rationale for this recommendation or how straightforward it would be to follow.
+>
+> Specifically for Java, Zip files can be written with [`ZipFile`](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/zip/ZipFile.html) or the [optional Zip file system module](https://docs.oracle.com/en/java/javase/25/docs/api/jdk.zipfs/module-summary.html).
+> I believe both support ZIP64, but I do not see an API to request that it is always used, including for smaller files. Apache Commons Compress [provides more ZIP64 control](https://commons.apache.org/proper/commons-compress/apidocs/org/apache/commons/compress/archivers/zip/ZipArchiveOutputStream.html#setUseZip64(org.apache.commons.compress.archivers.zip.Zip64Mode)), at the expense of requiring an extra dependency.
+>
+> The source for OpenJDK's `ZipFileSystem` [mentions a `"forceZIP64End"` property](https://github.com/openjdk/jdk/blob/master/src/jdk.zipfs/share/classes/jdk/nio/zipfs/ZipFileSystem.java#L179), but this appears to be undocumented.
+>
+> Will guidance / tooling be provided to achieve this recommendation in common languages?
+> Otherwise, if it's technically hard to achieve and likely to be ignored in practice, might this be downgraded from SHOULD to MAY?
 
 Thank you for raising this.
 The recommendation is a SHOULD, not a MUST, so OME-Zarr zip files that do not use ZIP64 remain valid.
@@ -22,9 +32,8 @@ ZIP64 is required once an archive exceeds 4 GiB, contains more than 65,535 entri
 Using ZIP64 from the start lets datasets cross these thresholds smoothly, at a cost of a few bytes per entry that is small compared to common dataset sizes.
 It also means that readers' ZIP64 code paths are exercised routinely rather than first encountered on large files.
 
+We agree that guidance for common languages is needed, and will include library-specific notes for writing ZIP64 in the implementation guidance of the RFC.
 We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and have expanded the corresponding text in the _Proposal_ section to state the thresholds and the reason it is not a requirement.
-
-### Minor comments and questions
 
 #### Image preview
 
