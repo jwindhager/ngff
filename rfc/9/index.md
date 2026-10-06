@@ -185,11 +185,17 @@ When creating OME-Zarr zip files, the following are RECOMMENDED:
 
 The zip comment is intended to provide metadata pertinent to the zip file structure, such as information about the ordering of entries within the central directory. It is not intended for storing metadata about the OME-Zarr's content. Such content-related metadata should be stored within the OME-Zarr hierarchy.
 
+The zip comment is encoded as JSON so that future versions of the OME-Zarr specification can add parameters to it, enabling parameterized features beyond versioning.
+The content of the comment is therefore defined by this specification under the `ome` attribute and extended only by future versions of the specification.
+
 The `ome` attribute in the zip archive comment MAY contain a `zipFile` attribute, which in turn MAY contain a `centralDirectory` attribute. The `centralDirectory` attribute provides metadata about the central directory's structure and content.
 
 The `centralDirectory` attribute MAY contain the following key:
 
 - `jsonFirst`: If `true`, this indicates that the `zarr.json` files are ordered breadth-first in the central directory and precede other content, as recommended above. This allows the hierarchical structure of the contents to be discovered without parsing the entire central directory, which could contain many entries of Zarr chunks. Implementations MAY assume that no further `zarr.json` files exist beyond the first non-`zarr.json` file if `jsonFirst` is `true`. If `jsonFirst` is omitted, the value defaults to `false`.
+  The intended use is to let viewers of OME-Zarr zip files, similar to tree views in HDF5 viewers such as HDFView or h5web, quickly display the structure of the hierarchy before reading any array data, and to support features such as auto-completion.
+  Without `jsonFirst` set to `true`, a reader has to parse the entire central directory to be sure that the whole structure has been discovered.
+  `jsonFirst` is a parameter because `false` is a valid value: files that do not order their entries this way remain valid OME-Zarr zip files, although ordering is recommended for the use cases above.
 
 For example,
 ```json
