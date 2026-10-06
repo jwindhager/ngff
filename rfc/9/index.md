@@ -130,7 +130,8 @@ In particular this prohibits "recursive zipping", the embedding of an OME-Zarr z
 
 Furthermore, this RFC prohibits splitting up the ZIP archive into multiple files ("multi-volume archives"), in favor of directory-backed OME-Zarr and Zarr's sharding codec.
 
-Likewise, this RFC prohibits ZIP encryption, since readers are not expected to handle passwords or decryption and an encrypted archive could not be opened by generic OME-Zarr tooling.
+Likewise, this RFC prohibits encryption at the ZIP archive level, since readers are not expected to handle passwords or decryption and an encrypted archive could not be opened by generic OME-Zarr tooling.
+Encryption at the codec level may be applicable to Zarr in general, but is out of scope for this RFC.
 
 #### Access and mutability
 
@@ -167,7 +168,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 2. The root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy. The ZIP file MUST contain the OME-Zarr's root-level `zarr.json`.
 3. OME-Zarr zip files MUST NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
 4. OME-Zarr zip files MUST NOT be split into multiple parts.
-5. OME-Zarr zip files MUST NOT use ZIP encryption.
+5. OME-Zarr zip files MUST NOT use ZIP archive-level encryption.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED:
 

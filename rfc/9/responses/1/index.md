@@ -125,8 +125,9 @@ We have stated this in the RFC.
 
 > It should be stated whether ozx files are allowed to use this feature or not, and if so, how use of encryption impacts other requirements.
 
-Encryption is not allowed.
+Encryption at the archive level is not permitted.
 We have added a MUST NOT requirement to the Specification section.
+Encryption at the codec level may be applicable to Zarr in general, but we consider it out of scope for this RFC.
 
 ##### Recovery
 
@@ -148,7 +149,7 @@ These are addressed in the responses to the performance and use case comments (s
 Thank you for the concrete proposal.
 We have gone through the suggested list item by item:
 
-- **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT use ZIP encryption.
+- **Encryption (any method):** adopted for the ZIP archive level. OME-Zarr zip files MUST NOT use ZIP encryption. Codec-level encryption is out of scope for this RFC.
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
 - **Compression at ZIP level:** remains a recommendation (SHOULD). Disabling ZIP-level compression is recommended in favor of Zarr-level codecs, but we do not require it, to keep the set of strict requirements small and so that generic tools can still produce conforming files. [Open: confirm this decision with co-authors.]
 - **Archive comments beyond the specified `ome` JSON:** the comment is a SHOULD and its content is defined by the specification. [Open: decide whether to constrain it further.]
