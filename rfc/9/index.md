@@ -130,6 +130,20 @@ In particular this prohibits "recursive zipping", the embedding of an OME-Zarr z
 
 Furthermore, this RFC prohibits splitting up the ZIP archive into multiple files ("multi-volume archives"), in favor of directory-backed OME-Zarr and Zarr's sharding codec.
 
+Likewise, this RFC prohibits ZIP encryption, since readers are not expected to handle passwords or decryption and an encrypted archive could not be opened by generic OME-Zarr tooling.
+
+#### Access and mutability
+
+Streaming an OME-Zarr zip file from beginning to end is not a goal of this RFC.
+As with the rest of Zarr, remote access is intended to use range-read requests, which are available from standard HTTP servers and object storage services such as S3.
+Client software is expected to retrieve the central directory, located near the end of the archive, without reading the entire archive, and then read the individual entries it needs.
+
+Some mutability of OME-Zarr zip files is expected.
+Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
+Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
+Mutation is, however, not efficient for every workload (see _Drawbacks, risks, alternatives, and unknowns_ below).
+For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
+
 Finally, this RFC also defines a new file extension to be used specifically with OME-Zarr zip files.
 This should enable file type detection (in absence of a magic number), improve user experience (e.g. by enabling file type association), avoid "accidental" in-place extraction (e.g. using on-board tooling of some operating systems) and encourage the use of OME-Zarr-specific tooling for creating OME-Zarr zip files (to follow the recommendations listed earlier).
 
@@ -153,6 +167,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 2. The root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy. The ZIP file MUST contain the OME-Zarr's root-level `zarr.json`.
 3. OME-Zarr zip files MUST NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
 4. OME-Zarr zip files MUST NOT be split into multiple parts.
+5. OME-Zarr zip files MUST NOT use ZIP encryption.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED:
 

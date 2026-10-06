@@ -93,6 +93,70 @@ ZIP, by contrast, already has mature libraries in most languages that absorb the
 We believe widespread adoption depends on this low barrier to entry.
 That said, we agree the complexity/adoption trade-off is ultimately an empirical question, and we will need to monitor the ecosystem as adoption grows.
 
+#### Requirements: streaming, mutability, encryption, recovery
+
+> The proposal should articulate the technical requirements of a single-file OME-Zarr format more thoroughly.
+
+Thank you; we agree.
+We have added an _Access and mutability_ subsection to the Proposal section and a requirement on encryption to the Specification section.
+
+##### Streaming
+
+> Is ozx intended to be streamable from a remote source?
+> - If not: this should be stated explicitly in the RFC that streamability is a non-goal.
+
+Streaming is not a goal.
+Like the rest of Zarr, network access is intended to use range-read requests, which are available from standard HTTP servers and object storage services such as S3.
+Client software is expected to retrieve the central directory without reading the entire archive.
+We have stated this explicitly in the RFC.
+Regarding the question on `jsonFirst`: it does not make offsets of all chunks available up front and is not intended to; it lets readers discover the hierarchy from the start of the central directory without parsing all of it.
+
+##### Mutability
+
+> Are the contents of a zipped OME-Zarr file intended to be mutable?
+
+Some mutability is expected: the archive can be appended to, files can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
+The recommendation to use ZIP64 is meant to support this by allowing archives to continue growing.
+We agree with the reviewer's observation that mutation has costs (a rewritten central directory, orphaned entries, and a possibly spoiled "`zarr.json` first" ordering, see the _Drawbacks_ section), and we have not adopted mitigations such as a padded header, in order to keep the format compatible with general-purpose ZIP libraries.
+For massively parallel changes, it is expected that the Zarr arrays are extracted, modified, and then repacked.
+We have stated this in the RFC.
+
+##### Encryption
+
+> It should be stated whether ozx files are allowed to use this feature or not, and if so, how use of encryption impacts other requirements.
+
+Encryption is not allowed.
+We have added a MUST NOT requirement to the Specification section.
+
+##### Recovery
+
+> Is this a concern for ozx?
+
+We consider it a limitation shared by ZIP in general.
+Because ZIP also stores a header before each entry, tools can recover entries from a damaged archive by scanning forward.
+We do not currently specify additional recovery mechanisms.
+[Open: confirm wording with co-authors, see also the response to the recovery and performance recommendation.]
+
+##### Performance and use cases
+
+These are addressed in the responses to the performance and use case comments (see the corresponding sections of this document).
+
+#### Explicitly constrain ZIP options
+
+> Expand the "OME-Zarr zip files" section of the specification to more fully enumerate which ZIP features are permitted vs. forbidden (e.g., encryption not permitted; no extra fields beyond specified metadata; mutation permitted or not)
+
+Thank you for the concrete proposal.
+We have gone through the suggested list item by item:
+
+- **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT use ZIP encryption.
+- **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
+- **Compression at ZIP level:** remains a SHOULD NOT. Disabling ZIP-level compression is recommended in favor of Zarr-level codecs, but we do not require it, to keep the set of strict requirements small and so that generic tools can still produce conforming files. [Open: confirm this decision with co-authors.]
+- **Archive comments beyond the specified `ome` JSON:** the comment is a SHOULD and its content is defined by the specification. [Open: decide whether to constrain it further.]
+- **Extra fields containing non-Zarr data** and **self-extracting ZIP code:** [Open: not yet decided.]
+- **Mutation:** permitted, with the caveats described in the _Access and mutability_ subsection of the RFC (see also the response above).
+
+Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable. [Open: add validator language; ozx-tck is intended for this purpose.]
+
 ## Comment 1
 
 Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.html) by Matt McCormick, Fideus Labs LLC.
