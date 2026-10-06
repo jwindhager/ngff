@@ -186,7 +186,8 @@ When creating OME-Zarr zip files, the following are RECOMMENDED:
 The zip comment is intended to provide metadata pertinent to the zip file structure, such as information about the ordering of entries within the central directory. It is not intended for storing metadata about the OME-Zarr's content. Such content-related metadata should be stored within the OME-Zarr hierarchy.
 
 The zip comment is encoded as JSON so that future versions of the OME-Zarr specification can add parameters to it, enabling parameterized features beyond versioning.
-The content of the comment is therefore defined by this specification under the `ome` attribute and extended only by future versions of the specification.
+The keys under the top-level `ome` attribute are strictly defined by this specification and are extended only by future versions of the specification.
+Other top-level keys of the JSON object are permitted and are meant to allow composition with other specifications.
 
 The `ome` attribute in the zip archive comment MAY contain a `zipFile` attribute, which in turn MAY contain a `centralDirectory` attribute. The `centralDirectory` attribute provides metadata about the central directory's structure and content.
 
