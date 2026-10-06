@@ -150,7 +150,7 @@ We have gone through the suggested list item by item:
 
 - **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT use ZIP encryption.
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
-- **Compression at ZIP level:** remains a SHOULD NOT. Disabling ZIP-level compression is recommended in favor of Zarr-level codecs, but we do not require it, to keep the set of strict requirements small and so that generic tools can still produce conforming files. [Open: confirm this decision with co-authors.]
+- **Compression at ZIP level:** remains a recommendation (SHOULD). Disabling ZIP-level compression is recommended in favor of Zarr-level codecs, but we do not require it, to keep the set of strict requirements small and so that generic tools can still produce conforming files. [Open: confirm this decision with co-authors.]
 - **Archive comments beyond the specified `ome` JSON:** the comment is a SHOULD and its content is defined by the specification. [Open: decide whether to constrain it further.]
 - **Extra fields containing non-Zarr data** and **self-extracting ZIP code:** [Open: not yet decided.]
 - **Mutation:** permitted, with the caveats described in the _Access and mutability_ subsection of the RFC (see also the response above).
