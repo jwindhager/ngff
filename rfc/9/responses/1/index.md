@@ -137,7 +137,6 @@ Like other archive formats with a trailing index, a ZIP archive that is corrupte
 Since every entry is also preceded by a local file header, and since this RFC requires that entries are stored without ZIP-level compression and that no data precedes the first local file header, recovery tools can often scan forward through the archive and rebuild the central directory.
 This is not guaranteed, e.g. when entries were written with data descriptors (sizes recorded after the entry data).
 Recovery is not a primary goal of this RFC, and we do not specify additional recovery mechanisms.
-[Open: confirm wording with co-authors, see also the response to the recovery and performance recommendation.]
 
 ##### Performance and use cases
 
