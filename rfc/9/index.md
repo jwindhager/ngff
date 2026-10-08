@@ -180,6 +180,8 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
    This list may be extended in future versions of this specification.
 8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
 
+A validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements above.
+
 When creating OME-Zarr zip files, the following are RECOMMENDED:
 
 1. The ZIP64 format extension SHOULD be used, irrespective of the ZIP file size.

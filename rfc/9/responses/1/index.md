@@ -133,9 +133,10 @@ Encryption at the codec level may be applicable to Zarr in general, but we consi
 
 > Is this a concern for ozx?
 
-We consider it a limitation shared by ZIP in general.
-Because ZIP also stores a header before each entry, tools can recover entries from a damaged archive by scanning forward.
-We do not currently specify additional recovery mechanisms.
+Like other archive formats with a trailing index, a ZIP archive that is corrupted or only partially transferred is hard to use directly, because the central directory is at the end of the file.
+Since every entry is also preceded by a local file header, and since this RFC requires that entries are stored without ZIP-level compression and that no data precedes the first local file header, recovery tools can often scan forward through the archive and rebuild the central directory.
+This is not guaranteed, e.g. when entries were written with data descriptors (sizes recorded after the entry data).
+Recovery is not a primary goal of this RFC, and we do not specify additional recovery mechanisms.
 [Open: confirm wording with co-authors, see also the response to the recovery and performance recommendation.]
 
 ##### Performance and use cases
@@ -153,11 +154,11 @@ We have gone through the suggested list item by item:
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
 - **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents.
 - **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
-- **Extra fields containing non-Zarr data:** adopted in a refined form. ZIP extra fields do not carry Zarr data but per-entry metadata (e.g. the ZIP64 information, timestamps, Unix permissions), so we prohibit all extra fields except an enumerated set of standard metadata fields (ZIP64 extended information, extended timestamp, Info-ZIP New Unix). This lets us extend the list in future versions of the specification. [Open: confirm the enumerated list with co-authors.]
+- **Extra fields containing non-Zarr data:** adopted in a refined form. ZIP extra fields do not carry Zarr data but per-entry metadata (e.g. the ZIP64 information, timestamps, Unix permissions), so we prohibit all extra fields except an enumerated set of standard metadata fields (ZIP64 extended information, extended timestamp, Info-ZIP New Unix). This lets us extend the list in future versions of the specification.
 - **Self-extracting ZIP code:** adopted in a general form. OME-Zarr zip files MUST NOT contain any data before the first local file header, which prohibits self-extracting archives and other prepended stubs. This may be revisited in a future version of the specification.
 - **Mutation:** permitted, with the caveats described in the _Access and mutability_ subsection of the RFC (see also the response above).
 
-Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable. [Open: add validator language; ozx-tck is intended for this purpose.]
+Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable. We have added a requirement that a validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
 
 ## Comment 1
 
