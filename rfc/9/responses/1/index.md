@@ -138,9 +138,18 @@ Since every entry is also preceded by a local file header, and since this RFC re
 This is not guaranteed, e.g. when entries were written with data descriptors (sizes recorded after the entry data).
 Recovery is not a primary goal of this RFC, and we do not specify additional recovery mechanisms.
 
-##### Performance and use cases
+##### Performance
 
-These are addressed in the responses to the performance and use case comments (see the corresponding sections of this document).
+> Is fast performance a goal of this format? If so, how fast? [...] Can that be achieved well with a single-file zipped OME-Zarr structure? How does it compare to unzipped OME-Zarr?
+
+Yes: we expect reading OME-Zarr zip files to be comparable to reading other Zarr stores when readers use range requests and the recommendations are followed.
+We have rewritten the _Performance_ section of the RFC to summarize the most relevant findings of the existing external evaluations (see also the response to comment 5 below), and to state this expectation.
+We have not performed benchmarks of central directory parsing time or random-access latency ourselves. [Open: decide whether to provide our own benchmarks, e.g. using ozx-tck or the example dataset, or to state this as a limitation.]
+The _Drawbacks_ section already describes the logic that readers may need to optimize lookups (parsing the central directory into a hash table or sorting it).
+
+##### Use cases
+
+This is addressed in the response to comment 3 (see the corresponding section of this document).
 
 #### Explicitly constrain ZIP options
 
@@ -192,9 +201,33 @@ Response to [comment 3](https://ngff.openmicroscopy.org/rfc/9/comments/3/index.h
 
 Response to [comment 4](https://ngff.openmicroscopy.org/rfc/9/comments/4/index.html) by Lenard Spiecker and Matthias Grunwald, Miltenyi Biotec B.V. & Co. KG.
 
+### Minor comments and questions
+
+#### ZIP disadvantage in performance
+
+> Compared to a directory store, file content is not necessarily stored page-aligned. [...] This point could be added under the drawback section in the RFC.
+
+Thank you for sharing this experience.
+We have added the lack of page alignment, the resulting read-modify-write cycles for unbuffered page-aligned I/O, and the mitigation of allocating a separate page per local file header (at the cost of additional space, acceptable with sharding) to the _Drawbacks_ section of the RFC.
+Note that padding by means of ZIP extra fields is not permitted by this RFC (see the requirement on extra fields); leaving unused space between entries, as described in the comment, remains possible.
+
 ## Comment 5
 
 Response to [comment 5](https://ngff.openmicroscopy.org/rfc/9/comments/5/index.html) by Anna Kreshuk, Dominik Kutra, and Dominik Kutra, Ilastik.
+
+### Significant comments and questions
+
+#### Clarify performance expectations
+
+> For an RFC to a public standard, in our opinion, at least the most relevant information from the external source should be reflected in the text.
+
+Agreed.
+The _Performance_ section now summarizes the most relevant findings of the two external sources in the text, including the key numbers and the observation that the reader implementation matters more than the use of ZIP itself, and notes that those evaluations concern geospatial rather than microscopy data.
+
+> "When creating OME-Zarr zip files, the following RECOMMENDATIONS ensure that reading from OME-Zarr zip files is similarly performant as reading from other storage formats:"
+
+We adopted a variant of this phrasing for the list of recommendations, stating that they are intended to ensure reading performance similar to other storage formats.
+We did not adopt the stronger formulation as a normative requirement on writers, since writers cannot fully control reader implementations; instead, the _Performance_ section advises writers to verify read performance for their data. [Open: confirm with co-authors whether to make this a SHOULD.]
 
 ### Minor comments and questions
 
