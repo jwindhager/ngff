@@ -101,6 +101,13 @@ This RFC weighs that additional per-implementation effort, and the resulting ris
 
 Considering the intended use cases for zipped OME-Zarr, the advantages discussed above were considered to outweigh the disadvantages of the ZIP archive file format, such as its limitations in efficiently writing and accessing file contents (see _Drawbacks, risks, alternatives, and unknowns_ section below).
 
+### OME-Zarr zip files as a file format
+
+This RFC defines a file format for OME-Zarr: the OME-Zarr zip file, identified by the `.ozx` extension.
+An OME-Zarr zip file is a valid ZIP file, and the contents obtained by unzipping it are a valid OME-Zarr (Zarr) hierarchy.
+The format formalizes the storage of OME-Zarr within a ZIP file, with restrictions and recommendations that allow for good performance and for future extension through the archive comment.
+It is a conservative subset of all possible ways of storing a Zarr hierarchy in a ZIP file and, because of these restrictions, a format of its own: every OME-Zarr zip file can be read by any ZIP tool and, once extracted, by any OME-Zarr tool, but not every ZIP file containing a Zarr hierarchy is an OME-Zarr zip file.
+
 ### Configuring ZIP for OME-Zarr
 ZIP archives are traditionally associated with deflate compression which would have redundancy with the per-chunk compression existing in Zarr.
 Changes in the size of files and compressed chunks could lead to significant fragmentation within a ZIP archive.
@@ -156,6 +163,22 @@ Finally, this RFC also defines a new file extension to be used specifically with
 This should enable file type detection (in absence of a magic number), improve user experience (e.g. by enabling file type association), avoid "accidental" in-place extraction (e.g. using on-board tooling of some operating systems) and encourage the use of OME-Zarr-specific tooling for creating OME-Zarr zip files (to follow the recommendations listed earlier).
 
 Note that this RFC does not - semantically or otherwise - restrict the data content of OME-Zarr hierarchies to be stored in OME-Zarr zip files.
+
+### Intended use cases and limitations
+
+The OME-Zarr zip file is primarily intended as a format that is written once and read many times, for the following use cases:
+
+- **File-centric workflows on a desktop**: opening an image from a file dialog, associating the file type with a viewer ("double click"), drag and drop, and sharing a few small images as e-mail attachments (see _Background_).
+- **Transport and archival** of OME-Zarr datasets as a single object, including large ones. The discussion of this RFC reported terabyte-scale Zarr hierarchies that are already distributed as zip, tar or squashfs files for this reason ([comment](https://github.com/ome/ngff/pull/316#issuecomment-3214762172)).
+- **Viewing and exploring remote data without downloading it**, using HTTP range requests. This is demonstrated by the viewers and example files listed in the _Implementation_ section: Neuroglancer, WEBKNOSSOS (which can read an OME-Zarr zip file remotely) and Zipglancer (which lists the contents and structure of OME-Zarr zip files using range requests).
+- **Exchange between Zarr implementations**, several of which already support ZIP stores (see _Implementation_).
+
+OME-Zarr zip files are not intended for, and are not appropriate for:
+
+- workloads with many concurrent writers or frequent in-place modification, for which it is expected that the Zarr arrays are extracted, modified and repacked, or that an unzipped OME-Zarr is used (see _Access and mutability_);
+- streaming from beginning to end (see _Access and mutability_);
+- archive-level encryption (see _Specification_);
+- very large numbers of entries without the sharding codec (see _Performance_).
 
 ## Specification
 
@@ -298,6 +321,10 @@ Socialization: see Prior art and references; the draft was further discussed amo
 - [Neuroglancer](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C927%5D%2C%22window%22:%5B0%2C1159%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B25%2C824%5D%2C%22window%22:%5B0%2C1025%5D%7D%2C%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%7D) of the [generated data](https://static.webknossos.org/misc/6001240.ozx) has kindly been [made available](https://github.com/ome/ngff/pull/316#issuecomment-3302595684) by Davis Bennett.
 - [WEBKNOSSOS](https://github.com/scalableminds/webknossos/pull/9738) is a web-based viewing and annotation platform that supports .ozx files.
 - [Zipglancer](https://github.com/JaneliaSciComp/zipglancer) is a client-side web explorer for ZIP and .ozx archives, using HTTP range requests, that reads the `jsonFirst` setting from the archive comment.
+
+### Example datasets
+- [6001240.ozx](https://static.webknossos.org/misc/6001240.ozx) is the dataset shown in the Neuroglancer link above.
+- 51 example datasets (CT, MRI and simulation volumes) are provided as OME-Zarr zip files in a public bucket, `https://ome-zarr-scivis.s3.us-east-1.amazonaws.com/v0.5/96x2-ozx/<name>.ozx`, listed in [Zipglancer](https://github.com/JaneliaSciComp/zipglancer/blob/main/src/data/sciVisDatasets.ts).
 
 ### Zarr libraries
 - [zarr-python](https://github.com/zarr-developers/zarr-python) has a ZipStore.

@@ -100,6 +100,10 @@ ZIP, by contrast, already has mature libraries in most languages that absorb the
 We believe widespread adoption depends on this low barrier to entry.
 That said, we agree the complexity/adoption trade-off is ultimately an empirical question, and we will need to monitor the ecosystem as adoption grows.
 
+To be clear about what this RFC defines: it is a file format.
+An OME-Zarr zip file (`.ozx`) is a valid ZIP file whose unzipped contents are a valid OME-Zarr hierarchy, restricted by a small set of MUST requirements and a set of recommendations that allow for performance and future parameterization via the archive comment.
+It is a conservative subset of all possible "Zarr in a ZIP file" layouts, and therefore its own format; we have added a section to the RFC that says so.
+
 #### Requirements: streaming, mutability, encryption, recovery
 
 > The proposal should articulate the technical requirements of a single-file OME-Zarr format more thoroughly.
@@ -185,6 +189,17 @@ We have gone through the suggested list item by item:
 
 Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable. We have added a requirement that a validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
 
+#### Provide implementation guidance
+
+> **Provide implementation guidance**: Show concrete examples of constructing ozx files, demonstrate performance characteristics, and highlight some languages/libraries that meet the spec's constraints.
+
+We have added implementation guidance as scripts and notes that accompany the RFC (the `scripts/rfc9/` directory; [Open: final location, a separate repository is possible]):
+
+- **Examples of constructing .ozx files**: self-contained writers for Python with the standard library `zipfile` and with the third-party package `stream-zip`, and for Java with the JDK alone and with Apache Commons Compress. They are tested against the checker described below.
+- **A checker** (`check_ozx.py`) that tests the MUST requirements of this RFC on a local file or a URL using range requests. It found no violations of the checked requirements in the 51 example datasets listed in Zipglancer.
+- **Library notes** (`scripts/rfc9/examples/README.md`) that state, for each library tested, which of the requirements and recommendations it can meet and where it falls short, e.g. the lack of control over the central directory order, the lack of an archive comment in the JDK zip file system and in `stream-zip`, and differences in how libraries write ZIP64 (see also the ZIP64 recommendations in the RFC). The RFC lists the libraries and tools that support OME-Zarr zip files in its _Implementation_ section.
+- **Performance characteristics**: the _Performance_ section summarizes external evaluations, and a benchmark script measures central directory costs (see the response on performance).
+
 ## Comment 1
 
 Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.html) by Matt McCormick, Fideus Labs LLC.
@@ -228,6 +243,25 @@ Response to [comment 2](https://ngff.openmicroscopy.org/rfc/9/comments/2/index.h
 ## Comment 3
 
 Response to [comment 3](https://ngff.openmicroscopy.org/rfc/9/comments/3/index.html) by Chris Barnes, German BioImaging.
+
+### Minor comments and questions
+
+#### Use case documentation
+
+> it will be important for the eventual spec changes to make clear the use cases for which .ozx is and is not appropriate. e.g. as a write-once read-many format for small datasets for archival or transport purposes.
+
+We agree and have added a section on _Intended use cases and limitations_ to the RFC.
+It lists the intended use cases (file-centric desktop workflows, transport and archival, viewing and exploring remote data with range requests, and exchange between Zarr implementations), points to current demonstrations of them, and lists what OME-Zarr zip files are not intended for (many concurrent writers or frequent in-place modification, streaming, archive-level encryption, and very large numbers of entries without sharding).
+The format is primarily write-once read-many, as suggested, but not exclusively: some mutability is expected (see the response to the comment on mutability above).
+
+The demonstrations we found in the record of this RFC and elsewhere are:
+
+- the Neuroglancer view of the example dataset `6001240.ozx` (see the _Tutorials and Examples_ section);
+- WEBKNOSSOS, which can read OME-Zarr zip files remotely and uploaded ones ([pull request](https://github.com/scalableminds/webknossos/pull/9738), merged);
+- Zipglancer, a web-based explorer for ZIP and OME-Zarr zip files using range requests, which provides links to 51 example OME-Zarr zip files in a public bucket (all of which pass the checks for the requirements of this RFC that `check_ozx.py` can perform on the central directory, and which all use the `jsonFirst` ordering);
+- converters and test tools: the Rust converter `ozx` and the validator `ozx-tck`.
+
+This list is not exhaustive. [Open: coordinate with the co-author assigned to the use case documentation and add any further demonstrations.]
 
 ## Comment 4
 
