@@ -26,14 +26,21 @@ Thank you for raising this.
 The recommendation is a SHOULD, not a MUST, so OME-Zarr zip files that do not use ZIP64 remain valid.
 We acknowledge that not all ZIP libraries currently offer an option to write ZIP64 for small archives, which is the main reason ZIP64 is not required.
 
-We nevertheless want to actively encourage ZIP64.
-We expect OME-Zarr datasets stored in zip files to keep growing.
-ZIP64 is required once an archive exceeds 4 GiB, contains more than 65,535 entries, or has offsets beyond 4 GiB; the entry limit in particular can be reached by an unsharded Zarr hierarchy well below 4 GiB.
-Using ZIP64 from the start lets datasets cross these thresholds smoothly, at a cost of a few bytes per entry that is small compared to common dataset sizes.
-It also means that readers' ZIP64 code paths are exercised routinely rather than first encountered on large files.
+We nevertheless want to actively encourage ZIP64, and we have made the recommendation more precise.
+The ZIP format itself requires ZIP64 once an archive reaches 65,535 entries (which an unsharded Zarr hierarchy can do well below 4 GiB) or once an archive, a central directory, an entry or an entry offset reaches 4 GiB.
+The RFC now recommends that:
+
+1. the ZIP64 end of central directory records SHOULD be present, irrespective of the size of the archive; and
+2. entries that are or may become larger than 4 GiB SHOULD use the ZIP64 extra fields, while writers MAY use them for all entries.
+
+The first recommendation costs about 76 bytes once per archive and makes it easier to append to an archive as it passes through the thresholds on the number of entries and on the size and offset of the central directory.
+The second matters for entries such as shards, which can be large and whose final size may not be known when they are written.
+Using the extra fields for all entries adds tens of bytes per entry: in the libraries we tested, 20 bytes per local file header and up to about 32 further bytes per central directory record.
+We consider this worthwhile relative to the gigabyte to terabyte scale at which OME-Zarr datasets are expected to grow; for example, a 1 TB dataset stored as about 1,000 shards of 1 GB carries well under 100 kB of such overhead.
 
 We agree that guidance for common languages is needed, and will include library-specific notes for writing ZIP64 in the implementation guidance of the RFC.
-We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and have expanded the corresponding text in the _Proposal_ section to state the thresholds and the reason it is not a requirement.
+Libraries differ in which of these pieces they can write: for example, of the libraries we tested, Python's `zipfile` can write the extra fields in the local headers but not the end records for small archives, while the JDK's zip file system can write the end records (through an undocumented property) but not the extra fields.
+We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and have expanded the corresponding text in the _Proposal_ section to state what is required by the ZIP format itself, what we recommend, and why it is not a requirement.
 
 #### Image preview
 
@@ -155,7 +162,7 @@ This is addressed in the response to comment 3 (see the corresponding section of
 
 > For future-proofing, I suggest generalizing this field beyond only a boolean. It would make sense as a field defining the nature of the tree structure. Something like "treeStructure": "levelOrder" (i.e. breadth first).
 
-`jsonFirst` asserts a property of the set of records, not of their order: every `zarr.json` record precedes every other record in the central directory.
+`jsonFirst` asserts a property of the set of records, not of their order: every `zarr.json` record precedes every other record in the central directory, not counting directory entries.
 This is exactly the property a reader needs in order to stop parsing the central directory early and still know that the structure of the hierarchy is complete; it does not depend on any particular order among the `zarr.json` records.
 A separate flag for breadth-first ordering was proposed during the drafting of the RFC and later removed for this reason.
 We have clarified this in the RFC (including that `jsonFirst` does not assert breadth-first order), and we have added an example.
@@ -187,7 +194,7 @@ Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.h
 > We agree with [the suggestion](https://github.com/ome/ngff/pull/364) to include a flag in the ZIP comment to indicate whether this ZIP ordered the files as suggested for clients. This would help readers optimize their parsing strategy.
 
 Thank you; this flag is `jsonFirst` in the archive comment, which is already part of the proposal.
-We have clarified in the RFC that it asserts that all `zarr.json` records precede all other records in the central directory, and that writers that modify an archive SHOULD keep the flag consistent with the order of the central directory.
+We have clarified in the RFC that it asserts that all `zarr.json` records precede all other records in the central directory (directory entries, which may appear anywhere, are not counted), and that writers that modify an archive SHOULD keep the flag consistent with the order of the central directory.
 [Zipglancer](https://github.com/JaneliaSciComp/zipglancer), a web-based explorer for ZIP and .ozx archives, reads this setting, and we have added it to the list of implementations.
 
 ### File order example
