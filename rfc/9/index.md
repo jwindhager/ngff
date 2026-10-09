@@ -182,7 +182,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 
 A validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements above.
 
-When creating OME-Zarr zip files, the following are RECOMMENDED:
+When creating OME-Zarr zip files, the following are RECOMMENDED. They are intended to ensure that reading OME-Zarr zip files is similarly performant as reading from other storage formats (see the _Performance_ section):
 
 1. The ZIP64 format extension SHOULD be used, irrespective of the ZIP file size.
 2. The sharding codec SHOULD be used to reduce the number of entries within the ZIP archive.
@@ -291,6 +291,11 @@ Drawbacks:
   - **Adding files to the zip file requires rewriting the central directory**.
     Since the central directory occurs near the end of the file, adding new files or expanding existing files requires that the central directory be removed, the new content added, and then central directory rewritten.
     This can be mitigated by adding many files at once and then closing the file once rather than adding them one by one and closing the file after each addition.
+  - **File content is not necessarily page-aligned**.
+    Compared to a directory store, the content of a file within a ZIP archive does not generally start at a page boundary of the storage device.
+    Implementers using unbuffered, page-aligned I/O reported a significant performance impact for both reading and writing, due to read-modify-write cycles.
+    This can be avoided by allocating a separate page for each local file header, including for chunks inside shards and the shard index, and leaving partially filled pages empty.
+    This comes at the cost of additional space, which is acceptable when sharding is used and chunks are not very small.
   - **Individual file headers may describe obsolete files**.
     While the central directory contains the canonical list of files near the end of a zip archive, obsolete files and their file headers may still be present earlier in the archive.
     Files detected while streaming a zip file may not represent the latest version of a file or files that may have been deleted.
@@ -398,8 +403,16 @@ In the future, the following could be considered:
 
 ## Performance
 
-Unrelated to the OME-NGFF community, Olli Niemitalo and Otto Rosenberg (Häme University of Applied Sciences, Finland) [extensively evaluated](https://github.com/hamk-uas/datacube-storage-lab) the performance of using zipped Zarr files for training machine learning models on geospatial data (Sentinel 2 Level-1C; tiled raster images).
-As mentioned by the authors, performance aspects of storing raster image data in zipped Zarr files have further been discussed as part of the European Space Agency's decision to disseminate Sentinel-2 satellite images as zipped Zarr, for example [here](https://github.com/csaybar/ESA-zar-zip-decision/issues/6) and [here](https://discourse.pangeo.io/t/whats-the-best-file-format-to-chose-for-raster-imagery-and-masks-products/4555).
+Performance of reading OME-Zarr zip files is expected to be comparable to reading other Zarr stores, provided that readers use range requests to read the central directory and the requested entries rather than reading the entire archive, and that the recommendations in the _Specification_ section are followed (in particular the use of sharding to limit the number of central directory entries).
+Fast random access to chunks, one of the principal benefits of Zarr, is retained because ZIP entries are stored without compression and can be located through the central directory.
+
+This expectation is supported by the following external evaluations, whose most relevant findings are summarized here:
+
+- Olli Niemitalo and Otto Rosenberg (Häme University of Applied Sciences, Finland) [evaluated](https://github.com/hamk-uas/datacube-storage-lab) the performance of using zipped Zarr files for training machine learning models on geospatial data (Sentinel 2 Level-1C; tiled raster images). On an S3 object store, reading zipped Zarr with an asynchronous filesystem implementation took about 7.1 s, compared to about 7.7 s for the equivalent directory Zarr; on local NVMe storage the times were about 1.3 s (zipped) and 1.2 s (directory). In a separate run, the standard synchronous ZipStore implementation was substantially slower than directory Zarr (about 24 s versus about 7.5 s on S3, and about 3.2 s versus about 1.1 s on NVMe), i.e. the reader implementation matters more than the use of ZIP itself. Copying the zipped dataset as a single file also took about 10 to 12 minutes, compared to about 27 to 30 minutes for the corresponding directory of 8,562 files.
+- The decision of the European Space Agency to disseminate Sentinel-2 images as zipped Zarr was accompanied by a [report](https://github.com/csaybar/ESA-zar-zip-decision/issues/6) that an asynchronous filesystem implementation reading from zip files can read zipped Zarr no slower than directory Zarr.
+
+These evaluations concern geospatial raster data, not microscopy data, and were not performed by the authors of this RFC.
+Writers should verify that reading their OME-Zarr zip files is similarly performant as reading from other storage formats for their data.
 
 ## Compatibility
 
