@@ -122,8 +122,9 @@ The following are recommended:
   This is a recommendation rather than a requirement because not all ZIP libraries currently offer an option to write ZIP64 for small archives; OME-Zarr zip files that do not use ZIP64 remain valid.
 - Use the Zarr sharding codec.
   This reduces the number of records in the central directory.
-- Include all `zarr.json` files at the beginning of the file and at the beginning of the central directory in a breadth-first order, starting with the root-level `zarr.json` as the first entry.
-  This enables efficient metadata processing and discovery of the hierarchy structure.
+- Place all `zarr.json` records at the beginning of the central directory, so that every `zarr.json` precedes every other record.
+  This enables efficient metadata processing and discovery of the hierarchy structure without parsing the entire central directory.
+  Only the order of the records in the central directory matters for this purpose; the central directory is rewritten whenever the archive is appended to, so it can be put in this order when the archive is closed, whatever the order in which the entries themselves were written.
 - Include an OME-Zarr-specific archive comment in the ZIP file header, indicating compliance with the OME-Zarr specification.
   This further facilitates efficient data/metadata access and also allows for additional (optional/recommended) single-file metadata that may be specified in future OME-Zarr versions.
 
@@ -143,6 +144,7 @@ Client software is expected to retrieve the central directory, located near the 
 
 Some mutability of OME-Zarr zip files is expected.
 Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
+The central directory may contain records with the same name transiently while an archive is being appended to; writers SHOULD remove such duplicates from the central directory at the end of a writing session.
 Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
 Mutation is, however, not efficient for every workload (see _Drawbacks, risks, alternatives, and unknowns_ below).
 For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
@@ -186,7 +188,7 @@ When creating OME-Zarr zip files, the following are RECOMMENDED. They are intend
 
 1. The ZIP64 format extension SHOULD be used, irrespective of the ZIP file size.
 2. The sharding codec SHOULD be used to reduce the number of entries within the ZIP archive.
-3. The root-level `zarr.json` file SHOULD be the first ZIP file entry and the first entry in the central directory header; other `zarr.json` files SHOULD follow immediately afterwards, in breadth-first order.
+3. All `zarr.json` records SHOULD precede all other records in the central directory. In this case, the `jsonFirst` parameter of the archive comment SHOULD be set to `true` (see below). Within the `zarr.json` records, the root-level `zarr.json` SHOULD come first and the other `zarr.json` records SHOULD follow in breadth-first order. The order in which the entries themselves are stored in the archive is not restricted.
 4. The name of OME-Zarr zip files SHOULD end with `.ozx`.
 5. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
 
@@ -202,10 +204,11 @@ The `ome` attribute in the zip archive comment MAY contain a `zipFile` attribute
 
 The `centralDirectory` attribute MAY contain the following key:
 
-- `jsonFirst`: If `true`, this indicates that the `zarr.json` files are ordered breadth-first in the central directory and precede other content, as recommended above. This allows the hierarchical structure of the contents to be discovered without parsing the entire central directory, which could contain many entries of Zarr chunks. Implementations MAY assume that no further `zarr.json` files exist beyond the first non-`zarr.json` file if `jsonFirst` is `true`. If `jsonFirst` is omitted, the value defaults to `false`.
+- `jsonFirst`: If `true`, this asserts that every `zarr.json` record precedes every other record in the central directory. It does not assert any particular order among the `zarr.json` records, such as breadth-first order. This allows the hierarchical structure of the contents to be discovered without parsing the entire central directory, which could contain many records of Zarr chunks: a reader can stop parsing at the first record that is not a `zarr.json`. Implementations MAY assume that no further `zarr.json` records exist beyond the first non-`zarr.json` record if `jsonFirst` is `true`. If `jsonFirst` is omitted, the value defaults to `false`.
   The intended use is to let viewers of OME-Zarr zip files, similar to tree views in HDF5 viewers such as HDFView or h5web, quickly display the structure of the hierarchy before reading any array data, and to support features such as auto-completion.
   Without `jsonFirst` set to `true`, a reader has to parse the entire central directory to be sure that the whole structure has been discovered.
   `jsonFirst` is a parameter because `false` is a valid value: files that do not order their entries this way remain valid OME-Zarr zip files, although ordering is recommended for the use cases above.
+  Since readers may rely on `jsonFirst: true` to stop reading the central directory early, a writer that modifies an archive SHOULD ensure that the flags in the archive comment are consistent with the order of the central directory, either by restoring the order or by setting `jsonFirst` to `false` (or omitting it).
 
 For example,
 ```json
@@ -220,6 +223,29 @@ For example,
   }
 }
 ```
+
+For example, for a hierarchy with the following `zarr.json` files:
+```
+/
+├── zarr.json
+├── image/
+│   ├── zarr.json
+│   ├── s0/
+│   │   └── zarr.json
+│   └── s1/
+│       └── zarr.json
+└── labels/
+    └── zarr.json
+```
+a central directory with `jsonFirst: true` and, in addition, the recommended breadth-first order of the `zarr.json` records is:
+1. `zarr.json`
+2. `image/zarr.json`
+3. `labels/zarr.json`
+4. `image/s0/zarr.json`
+5. `image/s1/zarr.json`
+6. (followed by the records of all other entries, such as chunks and shards)
+
+An order such as `zarr.json`, `image/zarr.json`, `image/s0/zarr.json`, `image/s1/zarr.json`, `labels/zarr.json` (depth-first) is also compatible with `jsonFirst: true`, because only the precedence of all `zarr.json` records over all other records is asserted.
 
 ## Requirements
 
@@ -263,6 +289,7 @@ Socialization: see Prior art and references; the draft was further discussed amo
 ### Viewers
 - [Neuroglancer](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C927%5D%2C%22window%22:%5B0%2C1159%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://static.webknossos.org/misc/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B25%2C824%5D%2C%22window%22:%5B0%2C1025%5D%7D%2C%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%7D) of the [generated data](https://static.webknossos.org/misc/6001240.ozx) has kindly been [made available](https://github.com/ome/ngff/pull/316#issuecomment-3302595684) by Davis Bennett.
 - [WEBKNOSSOS](https://github.com/scalableminds/webknossos/pull/9738) is a web-based viewing and annotation platform that supports .ozx files.
+- [Zipglancer](https://github.com/JaneliaSciComp/zipglancer) is a client-side web explorer for ZIP and .ozx archives, using HTTP range requests, that reads the `jsonFirst` setting from the archive comment.
 
 ### Zarr libraries
 - [zarr-python](https://github.com/zarr-developers/zarr-python) has a ZipStore.
