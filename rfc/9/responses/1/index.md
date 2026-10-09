@@ -151,6 +151,16 @@ The _Drawbacks_ section already describes the logic that readers may need to opt
 
 This is addressed in the response to comment 3 (see the corresponding section of this document).
 
+#### Generalizing `jsonFirst`
+
+> For future-proofing, I suggest generalizing this field beyond only a boolean. It would make sense as a field defining the nature of the tree structure. Something like "treeStructure": "levelOrder" (i.e. breadth first).
+
+`jsonFirst` asserts a property of the set of records, not of their order: every `zarr.json` record precedes every other record in the central directory.
+This is exactly the property a reader needs in order to stop parsing the central directory early and still know that the structure of the hierarchy is complete; it does not depend on any particular order among the `zarr.json` records.
+A separate flag for breadth-first ordering was proposed during the drafting of the RFC and later removed for this reason.
+We have clarified this in the RFC (including that `jsonFirst` does not assert breadth-first order), and we have added an example.
+Since the keys under `ome` are strictly defined by the specification and are extended by future versions of it, an additional parameter describing the order of the `zarr.json` records can be added later should a use case arise.
+
 #### Explicitly constrain ZIP options
 
 > Expand the "OME-Zarr zip files" section of the specification to more fully enumerate which ZIP features are permitted vs. forbidden (e.g., encryption not permitted; no extra fields beyond specified metadata; mutation permitted or not)
@@ -171,6 +181,21 @@ Regarding "Validators MUST reject ozx files violating these constraints": we agr
 ## Comment 1
 
 Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.html) by Matt McCormick, Fideus Labs LLC.
+
+### ZIP comment flag for file ordering
+
+> We agree with [the suggestion](https://github.com/ome/ngff/pull/364) to include a flag in the ZIP comment to indicate whether this ZIP ordered the files as suggested for clients. This would help readers optimize their parsing strategy.
+
+Thank you; this flag is `jsonFirst` in the archive comment, which is already part of the proposal.
+We have clarified in the RFC that it asserts that all `zarr.json` records precede all other records in the central directory, and that writers that modify an archive SHOULD keep the flag consistent with the order of the central directory.
+[Zipglancer](https://github.com/JaneliaSciComp/zipglancer), a web-based explorer for ZIP and .ozx archives, reads this setting, and we have added it to the list of implementations.
+
+### File order example
+
+> We recommend including a concrete example of the expected file order for clarification.
+
+Agreed; we have added an example to the RFC.
+Note that the example shows the central directory order with the recommended breadth-first order of the `zarr.json` records, which `jsonFirst` itself does not require.
 
 ### Collections RFC reference
 
@@ -202,6 +227,21 @@ Response to [comment 3](https://ngff.openmicroscopy.org/rfc/9/comments/3/index.h
 Response to [comment 4](https://ngff.openmicroscopy.org/rfc/9/comments/4/index.html) by Lenard Spiecker and Matthias Grunwald, Miltenyi Biotec B.V. & Co. KG.
 
 ### Minor comments and questions
+
+#### Ordering of zarr.json first
+
+> While placing the root and all other `zarr.json` files at the beginning of the archive potentially aids discovery and streaming access, practical implementations may still read the ZIP comment together with the central directory first. [...] We also observed that strict file ordering cannot be maintained when appending a new `zarr.json` (e.g., adding labels) to an existing .ozx file. Furthermore, we encounter cases where metadata is generated during acquisition; therefore, we lean toward writing data first and metadata second to avoid writing it twice.
+
+Thank you for this detailed feedback; it showed us that the RFC conflated two different orders.
+The purpose of the ordering is not streaming (which is not a goal of this RFC, see above) but to let applications show the structure of the hierarchy, for example as a tree view, without parsing the entire central directory.
+This only requires the order of the records in the central directory, not the order in which the entries are stored in the archive.
+The central directory is rewritten whenever an archive is appended to, so it can be put into the recommended order at the end of a writing session, regardless of when each `zarr.json` was written.
+Data can therefore be written first and metadata second.
+We have changed the RFC accordingly: the recommendation now concerns only the central directory, and the order of the entries themselves is not restricted.
+For writers that cannot reorder the central directory, `jsonFirst` can be set to `false` (or omitted), which is valid.
+As the comment suggests, readers may also read the archive comment and the central directory first; this remains possible.
+[Open: confirm with co-authors that the order of the entries themselves is no longer recommended.]
+Regarding duplicate `zarr.json` entries observed when appending: the RFC now recommends that writers remove duplicate records from the central directory at the end of a writing session. [Open: define which record a reader should use if duplicates remain.]
 
 #### ZIP disadvantage in performance
 
