@@ -162,7 +162,7 @@ This is addressed in the response to comment 3 (see the corresponding section of
 
 > For future-proofing, I suggest generalizing this field beyond only a boolean. It would make sense as a field defining the nature of the tree structure. Something like "treeStructure": "levelOrder" (i.e. breadth first).
 
-`jsonFirst` asserts a property of the set of records, not of their order: every `zarr.json` record precedes every other record in the central directory.
+`jsonFirst` asserts a property of the set of records, not of their order: every `zarr.json` record precedes every other record in the central directory, not counting directory entries.
 This is exactly the property a reader needs in order to stop parsing the central directory early and still know that the structure of the hierarchy is complete; it does not depend on any particular order among the `zarr.json` records.
 A separate flag for breadth-first ordering was proposed during the drafting of the RFC and later removed for this reason.
 We have clarified this in the RFC (including that `jsonFirst` does not assert breadth-first order), and we have added an example.
@@ -194,7 +194,7 @@ Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.h
 > We agree with [the suggestion](https://github.com/ome/ngff/pull/364) to include a flag in the ZIP comment to indicate whether this ZIP ordered the files as suggested for clients. This would help readers optimize their parsing strategy.
 
 Thank you; this flag is `jsonFirst` in the archive comment, which is already part of the proposal.
-We have clarified in the RFC that it asserts that all `zarr.json` records precede all other records in the central directory, and that writers that modify an archive SHOULD keep the flag consistent with the order of the central directory.
+We have clarified in the RFC that it asserts that all `zarr.json` records precede all other records in the central directory (directory entries, which may appear anywhere, are not counted), and that writers that modify an archive SHOULD keep the flag consistent with the order of the central directory.
 [Zipglancer](https://github.com/JaneliaSciComp/zipglancer), a web-based explorer for ZIP and .ozx archives, reads this setting, and we have added it to the list of implementations.
 
 ### File order example

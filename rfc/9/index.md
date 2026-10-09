@@ -125,7 +125,7 @@ The following are recommended:
   These are recommendations rather than requirements because not all ZIP libraries currently offer an option to write ZIP64 for small archives; OME-Zarr zip files that do not use ZIP64 remain valid as long as they do not exceed the limits of the classic ZIP format.
 - Use the Zarr sharding codec.
   This reduces the number of records in the central directory.
-- Place all `zarr.json` records at the beginning of the central directory, so that every `zarr.json` precedes every other record.
+- Place all `zarr.json` records at the beginning of the central directory, so that every `zarr.json` precedes every other record, except for directory entries.
   This enables efficient metadata processing and discovery of the hierarchy structure without parsing the entire central directory.
   Only the order of the records in the central directory matters for this purpose; the central directory is rewritten whenever the archive is appended to, so it can be put in this order when the archive is closed, whatever the order in which the entries themselves were written.
 - Include an OME-Zarr-specific archive comment in the ZIP file header, indicating compliance with the OME-Zarr specification.
@@ -187,7 +187,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 
 OME-Zarr zip files MAY contain directory entries, i.e. zero-length entries whose names end with `/`.
 Directory entries are not Zarr keys and SHOULD be ignored by readers.
-Like all other entries that are not `zarr.json` files, directory entries are subject to the `jsonFirst` parameter described below: if `jsonFirst` is `true`, they follow all `zarr.json` records in the central directory.
+Directory entries are ignored by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
 
 A validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements above.
 
@@ -196,7 +196,7 @@ When creating OME-Zarr zip files, the following are RECOMMENDED. They are intend
 1. The ZIP64 end of central directory records SHOULD be present, irrespective of the size of the archive.
 2. Entries that are or may become larger than 4 GiB SHOULD use the ZIP64 extra fields. Writers MAY use them for all entries.
 3. The sharding codec SHOULD be used to reduce the number of entries within the ZIP archive.
-4. All `zarr.json` records SHOULD precede all other records in the central directory. In this case, the `jsonFirst` parameter of the archive comment SHOULD be set to `true` (see below). Within the `zarr.json` records, the root-level `zarr.json` SHOULD come first and the other `zarr.json` records SHOULD follow in breadth-first order. The order in which the entries themselves are stored in the archive is not restricted.
+4. All `zarr.json` records SHOULD precede all other records in the central directory, not counting directory entries. In this case, the `jsonFirst` parameter of the archive comment SHOULD be set to `true` (see below). Within the `zarr.json` records, the root-level `zarr.json` SHOULD come first and the other `zarr.json` records SHOULD follow in breadth-first order. The order in which the entries themselves are stored in the archive is not restricted.
 5. The name of OME-Zarr zip files SHOULD end with `.ozx`.
 6. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
 
@@ -212,7 +212,7 @@ The `ome` attribute in the zip archive comment MAY contain a `zipFile` attribute
 
 The `centralDirectory` attribute MAY contain the following key:
 
-- `jsonFirst`: If `true`, this asserts that every `zarr.json` record precedes every other record in the central directory. It does not assert any particular order among the `zarr.json` records, such as breadth-first order. This allows the hierarchical structure of the contents to be discovered without parsing the entire central directory, which could contain many records of Zarr chunks: a reader can stop parsing at the first record that is not a `zarr.json`. Implementations MAY assume that no further `zarr.json` records exist beyond the first non-`zarr.json` record if `jsonFirst` is `true`. If `jsonFirst` is omitted, the value defaults to `false`.
+- `jsonFirst`: If `true`, this asserts that every `zarr.json` record precedes every other record in the central directory, not counting directory entries, which may appear anywhere. It does not assert any particular order among the `zarr.json` records, such as breadth-first order. This allows the hierarchical structure of the contents to be discovered without parsing the entire central directory, which could contain many records of Zarr chunks: a reader can stop parsing at the first record that is neither a `zarr.json` nor a directory entry. Implementations MAY assume that no further `zarr.json` records exist beyond the first record that is neither a `zarr.json` nor a directory entry if `jsonFirst` is `true`. If `jsonFirst` is omitted, the value defaults to `false`.
   The intended use is to let viewers of OME-Zarr zip files, similar to tree views in HDF5 viewers such as HDFView or h5web, quickly display the structure of the hierarchy before reading any array data, and to support features such as auto-completion.
   Without `jsonFirst` set to `true`, a reader has to parse the entire central directory to be sure that the whole structure has been discovered.
   `jsonFirst` is a parameter because `false` is a valid value: files that do not order their entries this way remain valid OME-Zarr zip files, although ordering is recommended for the use cases above.
