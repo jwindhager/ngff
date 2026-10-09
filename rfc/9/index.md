@@ -232,6 +232,8 @@ The zip comment is intended to provide metadata pertinent to the zip file struct
 The zip comment is encoded as JSON so that future versions of the OME-Zarr specification can add parameters to it, enabling parameterized features beyond versioning.
 The keys under the top-level `ome` attribute are strictly defined by this specification and are extended only by future versions of the specification.
 Other top-level keys of the JSON object are permitted and are meant to allow composition with other specifications.
+Other specifications and conventions, for example a future Zarr convention for thumbnails, can compose with OME-Zarr zip files in two ways: through metadata inside the Zarr hierarchy, which is part of the contents of the OME-Zarr and is stored like any other entry, and through a top-level key of their own in the archive comment, next to `ome`.
+Readers that do not understand such a key are expected to ignore it.
 
 The `ome` attribute in the zip archive comment MAY contain a `zipFile` attribute, which in turn MAY contain a `centralDirectory` attribute. The `centralDirectory` attribute provides metadata about the central directory's structure and content.
 
@@ -480,6 +482,7 @@ In the future, the following could be considered:
 - Allow embedding of OME-Zarr zip files in parent OME-Zarr zip files
 - Specify a single-volume specialization of OME-Zarr zip files
 - Generalize the recommendations of this RFC for storing a Zarr hierarchy in a ZIP file (the layout, the `zarr.json`-first ordering of the central directory, the archive comment) as a [Zarr convention](https://zarr.dev/conventions/) with more generic markers, once they have been iterated on further
+- Define a Zarr convention for thumbnails (preview images), with which OME-Zarr zip files can compose as described in the section on the archive comment
 - Allow ZIP-level compression of `zarr.json` documents
 - Allow the root of the OME-Zarr hierarchy to be located at a configurable path within the archive, instead of at the root of the ZIP archive, for example through a parameter in the archive comment
 

@@ -47,7 +47,8 @@ We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and 
 > The 'preview' aspect makes it tempting to want to embed a thumbnail, which could be supported by some applications or operating system plugins. Should this be explicitly forbidden / discouraged / encouraged in a standard way?
 
 We agree that thumbnails are particularly relevant for single-file use cases.
-However, we believe that thumbnail support applies to OME-Zarr in general and should therefore be proposed separately.
+However, we believe that thumbnail support applies to OME-Zarr, and to Zarr in general, and should therefore be proposed separately, preferably as a Zarr convention for thumbnails.
+We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome` (see the section on the archive comment structure).
 
 ## Review 2
 
@@ -390,7 +391,9 @@ Splitting remains a possible future extension; see the _Future possibilities_ se
 
 > Applications might benefit from pre-rendered thumbnails. [...] it might be a question if this should be a topic to be addressed by zipped OME-Zarr separately or if this is out of scope for this RFC.
 
-We consider this out of scope for this RFC and applicable to OME-Zarr in general; see our response to the same question in review 1.
+We consider this out of scope for this RFC. Thumbnails apply to Zarr in general and are probably best addressed by a Zarr convention for thumbnails, which we have added to the _Future possibilities_ section.
+We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome`, which readers that do not understand it are expected to ignore.
+The Open Packaging Conventions mentioned in the comment store thumbnails as separate parts of the package; whether OME-Zarr zip files should permit entries outside the Zarr hierarchy for this purpose is not addressed by this RFC. [Open: confirm with co-authors whether entries that are not part of the Zarr hierarchy are permitted, and that readers should ignore unknown comment keys.]
 
 #### Recommend specific implementations
 
