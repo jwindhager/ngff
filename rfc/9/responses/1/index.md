@@ -193,7 +193,7 @@ Regarding "Validators MUST reject ozx files violating these constraints": we agr
 
 > **Provide implementation guidance**: Show concrete examples of constructing ozx files, demonstrate performance characteristics, and highlight some languages/libraries that meet the spec's constraints.
 
-We have added implementation guidance as scripts and notes that accompany the RFC (the `scripts/rfc9/` directory; [Open: final location, a separate repository is possible]):
+We have added implementation guidance as scripts and notes that accompany the RFC (the `scripts/rfc9/` directory):
 
 - **Examples of constructing .ozx files**: self-contained writers for Python with the standard library `zipfile` and with the third-party package `stream-zip`, and for Java with the JDK alone and with Apache Commons Compress. They are tested against the checker described below.
 - **A checker** (`check_ozx.py`) that tests the MUST requirements of this RFC on a local file or a URL using range requests. It found no violations of the checked requirements in the 51 example datasets listed in Zipglancer.
