@@ -29,7 +29,9 @@ We acknowledge that not all ZIP libraries currently offer an option to write ZIP
 We nevertheless want to actively encourage ZIP64.
 We expect OME-Zarr datasets stored in zip files to keep growing.
 ZIP64 is required once an archive exceeds 4 GiB, contains more than 65,535 entries, or has offsets beyond 4 GiB; the entry limit in particular can be reached by an unsharded Zarr hierarchy well below 4 GiB.
-Using ZIP64 from the start lets datasets cross these thresholds smoothly, at a cost of a few bytes per entry that is small compared to common dataset sizes.
+Using ZIP64 from the start lets datasets cross these thresholds smoothly and makes it easier to append to an archive as it passes through them.
+The cost is tens of bytes per entry: in the libraries we tested, 20 bytes per local file header, and up to about 32 further bytes per central directory record (about 20 to 60 bytes per entry in total).
+We consider this worthwhile relative to the gigabyte to terabyte scale at which OME-Zarr datasets are expected to grow; for example, a 1 TB dataset stored as about 1,000 shards of 1 GB carries well under 100 kB of ZIP64 overhead.
 It also means that readers' ZIP64 code paths are exercised routinely rather than first encountered on large files.
 
 We agree that guidance for common languages is needed, and will include library-specific notes for writing ZIP64 in the implementation guidance of the RFC.

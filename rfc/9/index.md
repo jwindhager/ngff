@@ -118,7 +118,9 @@ The following are recommended:
 
 - Use the ZIP64 format.
   ZIP64 is required once a ZIP archive exceeds 4 GiB, contains more than 65,535 entries, or has entries at offsets beyond 4 GiB.
-  Using ZIP64 from the start, at the cost of a few extra bytes per entry, allows OME-Zarr zip files to grow beyond these limits without a change in format.
+  ZIP64 adds tens of bytes per entry (an extra field of 20 bytes in each local file header and, depending on the library, up to about 32 bytes in each central directory record).
+  This is small relative to the expected sizes of OME-Zarr datasets, which range from gigabytes to terabytes, especially when the sharding codec keeps the number of entries small.
+  Using ZIP64 from the start makes it easier to append to an OME-Zarr zip file as it passes through the thresholds above, because the archive does not change format along the way.
   This is a recommendation rather than a requirement because not all ZIP libraries currently offer an option to write ZIP64 for small archives; OME-Zarr zip files that do not use ZIP64 remain valid.
 - Use the Zarr sharding codec.
   This reduces the number of records in the central directory.
