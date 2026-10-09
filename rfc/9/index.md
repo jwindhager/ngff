@@ -117,11 +117,12 @@ This restriction may be relaxed in the future, e.g. for `zarr.json` documents.
 The following are recommended:
 
 - Use the ZIP64 format.
-  ZIP64 is required once a ZIP archive exceeds 4 GiB, contains more than 65,535 entries, or has entries at offsets beyond 4 GiB.
-  ZIP64 adds tens of bytes per entry (an extra field of 20 bytes in each local file header and, depending on the library, up to about 32 bytes in each central directory record).
-  This is small relative to the expected sizes of OME-Zarr datasets, which range from gigabytes to terabytes, especially when the sharding codec keeps the number of entries small.
-  Using ZIP64 from the start makes it easier to append to an OME-Zarr zip file as it passes through the thresholds above, because the archive does not change format along the way.
-  This is a recommendation rather than a requirement because not all ZIP libraries currently offer an option to write ZIP64 for small archives; OME-Zarr zip files that do not use ZIP64 remain valid.
+  The ZIP format itself requires ZIP64 once an archive contains 65,535 or more entries, or once an archive, a central directory, an entry or the offset of an entry reaches 4 GiB.
+  This RFC recommends that the ZIP64 end of central directory records are present even when they are not yet required, which costs about 76 bytes once per archive.
+  This makes it easier to append to an OME-Zarr zip file as it passes through the thresholds on the number of entries and on the size and offset of the central directory, because the archive does not change format along the way.
+  Entries that are or may become larger than 4 GiB, which is typical for shards, are recommended to use the ZIP64 extra fields, which may be needed already when the entry is written if its final size is not known in advance.
+  Writers may use the ZIP64 extra fields for all entries; this adds tens of bytes per entry (an extra field of 20 bytes in each local file header and, depending on the library, up to about 32 bytes in each central directory record), which is small relative to the expected sizes of OME-Zarr datasets of gigabytes to terabytes, especially when the sharding codec keeps the number of entries small.
+  These are recommendations rather than requirements because not all ZIP libraries currently offer an option to write ZIP64 for small archives; OME-Zarr zip files that do not use ZIP64 remain valid as long as they do not exceed the limits of the classic ZIP format.
 - Use the Zarr sharding codec.
   This reduces the number of records in the central directory.
 - Place all `zarr.json` records at the beginning of the central directory, so that every `zarr.json` precedes every other record.
@@ -188,11 +189,12 @@ A validator for OME-Zarr zip files MUST report a violation of any of the MUST or
 
 When creating OME-Zarr zip files, the following are RECOMMENDED. They are intended to ensure that reading OME-Zarr zip files is similarly performant as reading from other storage formats (see the _Performance_ section):
 
-1. The ZIP64 format extension SHOULD be used, irrespective of the ZIP file size.
-2. The sharding codec SHOULD be used to reduce the number of entries within the ZIP archive.
-3. All `zarr.json` records SHOULD precede all other records in the central directory. In this case, the `jsonFirst` parameter of the archive comment SHOULD be set to `true` (see below). Within the `zarr.json` records, the root-level `zarr.json` SHOULD come first and the other `zarr.json` records SHOULD follow in breadth-first order. The order in which the entries themselves are stored in the archive is not restricted.
-4. The name of OME-Zarr zip files SHOULD end with `.ozx`.
-5. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
+1. The ZIP64 end of central directory records SHOULD be present, irrespective of the size of the archive.
+2. Entries that are or may become larger than 4 GiB SHOULD use the ZIP64 extra fields. Writers MAY use them for all entries.
+3. The sharding codec SHOULD be used to reduce the number of entries within the ZIP archive.
+4. All `zarr.json` records SHOULD precede all other records in the central directory. In this case, the `jsonFirst` parameter of the archive comment SHOULD be set to `true` (see below). Within the `zarr.json` records, the root-level `zarr.json` SHOULD come first and the other `zarr.json` records SHOULD follow in breadth-first order. The order in which the entries themselves are stored in the archive is not restricted.
+5. The name of OME-Zarr zip files SHOULD end with `.ozx`.
+6. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
 
 #### OME-Zarr Zip Comment Structure
 
