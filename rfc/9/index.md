@@ -480,7 +480,7 @@ In the future, the following could be considered:
 - Allow embedding of OME-Zarr zip files in parent OME-Zarr zip files
 - Specify a single-volume specialization of OME-Zarr zip files
 - Allow ZIP-level compression of `zarr.json` documents
-- Allow the root of the OME-Zarr hierarchy to be located at a configurable path within the archive, instead of at the root of the ZIP archive
+- Allow the root of the OME-Zarr hierarchy to be located at a configurable path within the archive, instead of at the root of the ZIP archive, for example through a parameter in the archive comment
 
 ## Performance
 

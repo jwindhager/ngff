@@ -442,3 +442,11 @@ We agree that compression of `zarr.json` documents could be useful, and the RFC 
 
 We have decided to defer a configurable root, i.e. locating the OME-Zarr hierarchy at a path inside the archive, to a future version of the specification, and have added it to the _Future possibilities_ section.
 For now, the root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy; this avoids additional prompts for users and inconsistencies when renaming OME-Zarr zip files.
+If the root is made configurable in the future, this could be done through a parameter in the archive comment (the keys under `ome` are defined by the specification and extended only by future versions of it).
+
+> **Note for co-authors:** please consider how difficult such a future change would be before this RFC is finalized. Points to examine, none of which is decided:
+>
+> - A file with a configurable root would violate the current requirement that the root of the ZIP archive corresponds to the root of the OME-Zarr hierarchy. Readers that do not know the parameter would look for `zarr.json` at the archive root. How should such files be distinguished from files that conform to this version (for example by the `ome.version` in the archive comment), and what should older readers do?
+> - How would a root path interact with the `jsonFirst` parameter and the central directory order, with directory entries, and with the `.ozx` file type association (viewers currently do not need to prompt for a path)?
+> - Which of the use cases that motivated the feedback (SpatialData, the HCS specification) could be served instead by a different layout at the root of the archive, so that no parameter is needed?
+> - Is the archive comment, which is limited to 65,535 bytes and can be missing or lost when an archive is rewritten by generic tools, an acceptable place for a parameter that changes how the archive is interpreted?
