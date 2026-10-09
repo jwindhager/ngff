@@ -144,7 +144,7 @@ Recovery is not a primary goal of this RFC, and we do not specify additional rec
 
 Yes: we expect reading OME-Zarr zip files to be comparable to reading other Zarr stores when readers use range requests and the recommendations are followed.
 We have rewritten the _Performance_ section of the RFC to summarize the most relevant findings of the existing external evaluations (see also the response to comment 5 below), and to state this expectation.
-We have not performed benchmarks of central directory parsing time or random-access latency ourselves. [Open: decide whether to provide our own benchmarks, e.g. using ozx-tck or the example dataset, or to state this as a limitation.]
+We have measured central directory costs on synthetic archives (scripts in `scripts/rfc9/`): parsing time and central directory size grow linearly with the number of entries (about 0.6 s and 59 MB at one million entries with a minimal parser), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in time independent of the number of entries. These measurements are local and do not include network latency. [Open: summarize these results in the RFC; random-access chunk read latency compared to an unzipped store has not been measured.]
 The _Drawbacks_ section already describes the logic that readers may need to optimize lookups (parsing the central directory into a hash table or sorting it).
 
 ##### Use cases
