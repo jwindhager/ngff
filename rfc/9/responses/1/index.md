@@ -61,6 +61,42 @@ Response to [review 2](https://ngff.openmicroscopy.org/rfc/9/reviews/2/index.htm
 
 Agreed. We have added a clarifying note to the Compatibility section stating that this RFC applies only to OME-Zarr hierarchies with metadata in `zarr.json` (i.e. OME-Zarr v0.5 and later), and does not apply to hierarchies using the legacy `.zattrs`/`.zarray` metadata files (OME-Zarr v0.4 and earlier).
 
+### Minor comments and questions
+
+> The specification section has the line "Amend the specification with the following section:" Is this a reference to the section that immediately follows?
+
+Yes; we have reworded the sentence to make this explicit.
+
+> The example json for the ome attribute in the zip archive has an extraneous comma on the line `"jsonFirst": true`
+
+Thank you, the comma has been removed.
+
+> The phrase: "These disadvantages were considered to be outweighed by other aspects (see Proposal section)." looks like it should be unindented so it applies to the whole "Drawbacks" section
+
+Agreed; the sentence is now a separate paragraph after the list of drawbacks.
+
+> Is the limitation (imposed by enforcing single-file archival) of the total size of an OME-Zarr image that can be represented as a single file this way a Drawback?
+
+Yes, in practice: the limits of ZIP64 are far beyond practical sizes, but very large single files are difficult to handle (file system and object store limits, transfer and copy costs).
+We have added this to the drawbacks, noting that directory-backed or object store-backed OME-Zarr remains an option for very large datasets.
+
+> Compatibility: Is it fully compatible with zarr < 0.5?
+
+No: see the response above ("Versions of OME Zarr"); the RFC applies only to OME-Zarr v0.5 and later.
+
+> Is the example dataset at https://static.webknossos.org/misc/6001240.ozx supposed to be accessible by viewers? [...] Access to fetch [...] has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+
+> [Neuroglancer link] with acl to public and CORS to allow all origins works.
+
+Thank you for testing this.
+The server that hosts the example dataset does not currently send CORS headers, which we confirmed, so browser-based viewers other than the linked Neuroglancer demo cannot read it directly; this is a property of the hosting, not of the format.
+We have added a note on the required CORS configuration to the _Tutorials and Examples_ section, and added a set of 51 example datasets, hosted in a bucket that allows cross-origin requests, to the _Implementation_ section. [Open: consider re-hosting `6001240.ozx` with CORS enabled.]
+
+> Tutorials and Examples -> [...] A short worked example of how to write/construct .ozx would be valuable.
+
+We agree; see the response on implementation guidance (Review 3) and the scripts that accompany the RFC.
+We have referenced them in the _Tutorials and Examples_ section.
+
 ## Review 3
 
 Response to [review 3](https://ngff.openmicroscopy.org/rfc/9/reviews/3/index.html) by Curtis Rueden, University of Wisconsin-Madison.
@@ -200,6 +236,14 @@ We have added implementation guidance as scripts and notes that accompany the RF
 - **Library notes** (`scripts/rfc9/examples/README.md`) that state, for each library tested, which of the requirements and recommendations it can meet and where it falls short, e.g. the lack of control over the central directory order, the lack of an archive comment in the JDK zip file system and in `stream-zip`, and differences in how libraries write ZIP64 (see also the ZIP64 recommendations in the RFC). The RFC lists the libraries and tools that support OME-Zarr zip files in its _Implementation_ section.
 - **Performance characteristics**: the _Performance_ section summarizes external evaluations, and a benchmark script measures central directory costs (see the response on performance).
 
+### Minor comments and questions
+
+#### Abandoned Ideas section
+
+> The "Semantically restrict the contents of single-file OME-Zarr" point makes sense, but I would add that this idea is orthogonal to that of a zipped single-file format: one could just as well propose semantic restrictions on multi-file OME-Zarr, and it could potentially have value, but such a discussion should be outside the scope of this RFC.
+
+Agreed; we have added this to the corresponding item in the _Abandoned Ideas_ section.
+
 ## Comment 1
 
 Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.html) by Matt McCormick, Fideus Labs LLC.
@@ -239,6 +283,19 @@ An accidental [regression](https://github.com/ome/ngff/pull/316/commits/657b3345
 ## Comment 2
 
 Response to [comment 2](https://ngff.openmicroscopy.org/rfc/9/comments/2/index.html) by Joost de Folter, BioImaging-NL.
+
+### Minor comments and questions
+
+> Can one use ZIP64 on files that don't require it? It appears that ZIP64 records only exist in zip files that pass the 64bit length boundary. If the force_zip64 flag resolves this, then this would require this set as default in ZipStore I assume?
+
+Yes, ZIP64 can be used for archives that do not require it, and the RFC now recommends this in two parts (see the response on ZIP64 above).
+Of the libraries we tested, Python's `zipfile` can write the ZIP64 extra field in the local headers of every entry with `force_zip64=True`, but it cannot force the ZIP64 end records for a small archive.
+The `ZipStore` of zarr-python 3.4.1 does not use ZIP64 for small archives (none of the 22 local headers in our test had the field), so following the recommendation would require support in `ZipStore`.
+
+> https://github.com/python/cpython/issues/47073 - conceptually, data and metadata needs to be written together (add to implementation section)
+
+Thank you; we have added a note to the _Implementation_ section.
+Python's `zipfile` permits several entries with the same name, so rewriting a `zarr.json` produces duplicate central directory records, which the RFC now recommends to remove at the end of a writing session (see also the notes on `ZipFile.remove()` and `ZipFile.repack()`, planned for Python 3.16, in the implementation guidance).
 
 ## Comment 3
 
@@ -292,6 +349,46 @@ Thank you for sharing this experience.
 We have added the lack of page alignment, the resulting read-modify-write cycles for unbuffered page-aligned I/O, and the mitigation of allocating a separate page per local file header (at the cost of additional space, acceptable with sharding) to the _Drawbacks_ section of the RFC.
 Note that padding by means of ZIP extra fields is not permitted by this RFC (see the requirement on extra fields); leaving unused space between entries, as described in the comment, remains possible.
 
+#### Sharding constraints
+
+> [...] partial writes are impractical unless the final size of each shard is known in advance. As a result, it is often not recommended to shard an axis that is acquired sequentially. [...] This point could be added under the drawback section in the RFC. The recommendation to SHOULD use sharding depends of course on the chunk size, the expected number of chunks and the codec pipeline.
+
+Agreed; we have added this to the _Drawbacks_ section and made the dependence of the sharding recommendation on these factors explicit.
+
+#### CRC/hash requirement
+
+> ZIP requires CRC32 for file entries, which is useful for integrity verification, but it burdens implementations, especially for partial writes and reads. [...] clarifying recommended strategies (e.g., validating at shard or chunk granularity and deferring CRC checks for in-flight writes) would help implementers. [...] This point could be added under the drawback section in the RFC.
+
+We have added this to the _Drawbacks_ section, including the observation on hardware support for CRC-32C but not for the CRC-32 used by ZIP, which we attribute to the comment.
+The RFC now states that implementations may validate at shard or chunk granularity and defer CRC-32 checks for entries that are still being written. [Open: confirm with co-authors that this is meant as an allowance and not as a recommendation.]
+
+#### ZIP disadvantage when updating
+
+> [...] we allowed in-place updates as long as the size does not grow beyond the existing space. As an example, we added capacity (padding) to allow in-place updates of metadata. (Similar to `tiffcomment` or `tiffset` on tiff files). [...] We just wanted to mention here how this could be mitigated in certain cases.
+
+Thank you; we have added this mitigation to the _Drawbacks_ section.
+Padding by means of ZIP extra fields is not permitted by this RFC (see the requirement on extra fields); reserving unused space between entries remains possible.
+
+#### Split archives
+
+> [...] we see use cases where archive-level splitting would be beneficial, particularly from a user-experience perspective. However, we acknowledge that this adds complexity to implementations, and support this decision.
+
+Thank you for your support of this decision.
+Splitting remains a possible future extension; see the _Future possibilities_ section.
+
+#### Thumbnails
+
+> Applications might benefit from pre-rendered thumbnails. [...] it might be a question if this should be a topic to be addressed by zipped OME-Zarr separately or if this is out of scope for this RFC.
+
+We consider this out of scope for this RFC and applicable to OME-Zarr in general; see our response to the same question in review 1.
+
+#### Recommend specific implementations
+
+> In general, the specification could recommend in the end using specific implementations over standard ZIP writers so that end users can create compatible .ozx files and avoid interoperability issues.
+
+We agree with the intent: the RFC states that OME-Zarr zip files are expected to be produced primarily by OME-Zarr-aware tooling rather than by generic ZIP tools, and the _Implementation_ section lists the tools and libraries that support them.
+We did not make a recommendation for specific implementations part of the specification, since this would tie the specification to the current state of the ecosystem; instead, the implementation guidance that accompanies the RFC (scripts, a checker, and notes on the capabilities of several libraries) helps implementers and users to create and verify compatible files.
+
 ## Comment 5
 
 Response to [comment 5](https://ngff.openmicroscopy.org/rfc/9/comments/5/index.html) by Anna Kreshuk, Dominik Kutra, and Dominik Kutra, Ilastik.
@@ -310,6 +407,15 @@ The _Performance_ section now summarizes the most relevant findings of the two e
 We adopted a variant of this phrasing for the list of recommendations, stating that they are intended to ensure reading performance similar to other storage formats.
 We did not adopt the stronger formulation as a normative requirement on writers, since writers cannot fully control reader implementations; instead, the _Performance_ section advises writers to verify read performance for their data. [Open: confirm with co-authors whether to make this a SHOULD.]
 
+#### Avoid appending
+
+> We suggest adding an explicit recommendation, such as: "It is RECOMMENDED that OME-Zarr zip files are treated as read-only objects after the initial write operation. Modifying operations SHOULD be implemented by rewriting the entire file."
+
+Thank you; the difficulty of parallel writes into an archive is exactly what this comment highlights.
+We have not adopted a recommendation to treat OME-Zarr zip files as read-only, because some mutability is expected and the recommendations of the RFC (ZIP64, writing the central directory at the end of a writing session, removing duplicate records) set up the archive to allow for some updates of the data.
+At the same time, we acknowledge that an unzipped OME-Zarr may provide better write performance, especially when parallelization is involved; for massively parallel changes the arrays are expected to be extracted, modified, and repacked.
+We have added both points to the _Access and mutability_ subsection of the RFC.
+
 ### Minor comments and questions
 
 > The proposed new section of the specification uses the term "SHALL", which is so far not used elsewhere in the specification. Since according to IETF RFC 2119, SHALL is synonymous to MUST, and MUST is the term used in the rest of the specification, this should be replaced.
@@ -319,3 +425,20 @@ This suggestion has now been adopted.
 > Duplication of "the" in "The ZIP file MUST contain the the OME-Zarr's root-level zarr.json."
 
 This typo has now been corrected.
+
+## Further feedback
+
+### ZIP-level compression may be useful
+
+> Compression may still be useful for the zarr.json files. ([comment on a related pull request](https://github.com/ome/ngff/pull/364#issuecomment-3543196447))
+
+Thank you.
+At this time, OME-Zarr zip files MUST NOT use ZIP-level compression (STORE only), to keep readers and writers simple and partial reads direct.
+We agree that compression of `zarr.json` documents could be useful, and the RFC states that this restriction may be relaxed in a future version of the specification for these documents; we have added it to the _Future possibilities_ section.
+
+### Configurable root may be useful
+
+> (feedback referring to SpatialData and to the HCS specification)
+
+We have decided to defer a configurable root, i.e. locating the OME-Zarr hierarchy at a path inside the archive, to a future version of the specification, and have added it to the _Future possibilities_ section.
+For now, the root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy; this avoids additional prompts for users and inconsistencies when renaming OME-Zarr zip files.
