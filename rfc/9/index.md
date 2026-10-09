@@ -479,6 +479,7 @@ In the future, the following could be considered:
 - Allow embedding of OME-Zarr zip files in parent OME-Zarr hierarchies
 - Allow embedding of OME-Zarr zip files in parent OME-Zarr zip files
 - Specify a single-volume specialization of OME-Zarr zip files
+- Generalize the recommendations of this RFC for storing a Zarr hierarchy in a ZIP file (the layout, the `zarr.json`-first ordering of the central directory, the archive comment) as a [Zarr convention](https://zarr.dev/conventions/) with more generic markers, once they have been iterated on further
 - Allow ZIP-level compression of `zarr.json` documents
 - Allow the root of the OME-Zarr hierarchy to be located at a configurable path within the archive, instead of at the root of the ZIP archive, for example through a parameter in the archive comment
 

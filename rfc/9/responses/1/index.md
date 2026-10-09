@@ -320,6 +320,16 @@ The demonstrations we found in the record of this RFC and elsewhere are:
 
 This list is not exhaustive. [Open: coordinate with the co-author assigned to the use case documentation and add any further demonstrations.]
 
+#### Beyond OME-Zarr
+
+> The recommendations made by the RFC (zarr.json at the root, sorted metadata files) are valuable to all single-file Zarr users, and the only OME-Zarr specific elements are arbitrary markers (the ZIP comment and file extension). [...] Would it be possible to submit this meta-format as e.g. a [zarr convention](https://zarr.dev/conventions/), with more generic markers?
+
+Thank you for the suggestion.
+We would like to continue to iterate on these recommendations in the context of OME-Zarr before addressing them to Zarr directly.
+A version of this proposal could become a Zarr convention, and that could be a way to iterate on it more quickly than the OME-Zarr RFC process allows.
+We have added this to the _Future possibilities_ section.
+In the meantime, the design leaves room for this: the keys under `ome` in the archive comment are defined by this specification, while other top-level keys are permitted to allow composition with other specifications.
+
 ## Comment 4
 
 Response to [comment 4](https://ngff.openmicroscopy.org/rfc/9/comments/4/index.html) by Lenard Spiecker and Matthias Grunwald, Miltenyi Biotec B.V. & Co. KG.
