@@ -393,7 +393,8 @@ Splitting remains a possible future extension; see the _Future possibilities_ se
 
 We consider this out of scope for this RFC. Thumbnails apply to Zarr in general and are probably best addressed by a Zarr convention for thumbnails, which we have added to the _Future possibilities_ section.
 We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome`, which readers that do not understand it are expected to ignore.
-The Open Packaging Conventions mentioned in the comment store thumbnails as separate parts of the package; whether OME-Zarr zip files should permit entries outside the Zarr hierarchy for this purpose is not addressed by this RFC. [Open: confirm with co-authors whether entries that are not part of the Zarr hierarchy are permitted, and that readers should ignore unknown comment keys.]
+The Open Packaging Conventions mentioned in the comment store thumbnails as separate parts of the package; OME-Zarr zip files may likewise contain entries that are not Zarr keys, since Zarr itself does not prohibit them (see the RFC).
+This specification governs only the keys under `ome` in the archive comment, all of which readers must understand; other top-level keys are not governed by it and are meant for composition.
 
 #### Recommend specific implementations
 
@@ -419,6 +420,19 @@ The _Performance_ section now summarizes the most relevant findings of the two e
 
 We adopted a variant of this phrasing for the list of recommendations, stating that they are intended to ensure reading performance similar to other storage formats.
 We did not adopt the stronger formulation as a normative requirement on writers, since writers cannot fully control reader implementations; instead, the _Performance_ section advises writers to verify read performance for their data. [Open: confirm with co-authors whether to make this a SHOULD.]
+
+#### Specify possible roots
+
+> We recommend explicitly specifying the possible roots, since RFC-9 assigns meaning to the "root of the OME-Zarr hierarchy". For example: "The ZIP file MUST contain exactly one multiscale image (including optionally one labels group), or exactly one high-content screening dataset." At a minimum, we recommend replacing the word "hierarchy" with the equally broad "dataset" or "fileset" to avoid increasing the number of undefined terms in the specification.
+
+Thank you for raising this.
+We compared the terms with the current OME-Zarr specification.
+"Zarr hierarchy" is already used there for the tree of Zarr groups and arrays below a root group.
+"Dataset" is not better defined: in the multiscales metadata, `datasets` denotes the arrays that store the individual resolution levels, and elsewhere the word is used informally (for example "high-content screening dataset" and "scene dataset"); "fileset" is used in the specification for the layout produced by `bioformats2raw`.
+We have therefore kept "hierarchy", and the RFC now defines the term "OME-Zarr hierarchy" once, as a Zarr hierarchy whose contents conform to the OME-Zarr specification.
+
+Regarding the possible roots: this RFC does not restrict the contents of the OME-Zarr that is stored, semantically or otherwise (see the item on semantic restrictions in the _Abandoned Ideas_ section), so the root of the archive is the root of whatever OME-Zarr hierarchy the specification permits, now or in the future.
+This avoids tying the single-file format to the set of root types of a particular version of the specification, which may be extended by the collections RFC. [Open: confirm with co-authors that the possible roots are intentionally not enumerated.]
 
 #### Avoid appending
 
@@ -459,7 +473,7 @@ If the root is made configurable in the future, this could be done through a par
 
 > **Note for co-authors:** please consider how difficult such a future change would be before this RFC is finalized. Points to examine, none of which is decided:
 >
-> - A file with a configurable root would violate the current requirement that the root of the ZIP archive corresponds to the root of the OME-Zarr hierarchy. Readers that do not know the parameter would look for `zarr.json` at the archive root. How should such files be distinguished from files that conform to this version (for example by the `ome.version` in the archive comment), and what should older readers do?
+> - A file with a configurable root would violate the current requirement that the root of the ZIP archive corresponds to the root of the OME-Zarr hierarchy. Readers that do not know the parameter would look for `zarr.json` at the archive root. Since readers MUST understand all keys under `ome`, a parameter added under `ome` in a later version would make older readers reject such a file instead of misreading it; is that the intended way to introduce it, and how should such files be distinguished from files that conform to this version (for example by the `ome.version` in the archive comment)?
 > - How would a root path interact with the `jsonFirst` parameter and the central directory order, with directory entries, and with the `.ozx` file type association (viewers currently do not need to prompt for a path)?
 > - Which of the use cases that motivated the feedback (SpatialData, the HCS specification) could be served instead by a different layout at the root of the archive, so that no parameter is needed?
 > - Is the archive comment, which is limited to 65,535 bytes and can be missing or lost when an archive is rewritten by generic tools, an acceptable place for a parameter that changes how the archive is interpreted?
