@@ -226,6 +226,8 @@ This section specifies how to store an OME-Zarr hierarchy within a single file.
 
 #### OME-Zarr zip files
 
+In this RFC, an OME-Zarr hierarchy is a Zarr hierarchy, i.e. the tree of Zarr groups and arrays below a root group, whose contents conform to the OME-Zarr specification.
+
 An OME-Zarr hierarchy MAY be stored within a ZIP archive, as defined in the [PKWARE .ZIP File Format Specification (APPNOTE.TXT)](https://pkware.cachefly.net/webdocs/APPNOTE/APPNOTE-6.3.10.TXT).
 
 For a ZIP file to be referred to as an OME-Zarr zip file the following conditions MUST be met:
@@ -240,9 +242,11 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
 9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy. Readers MUST use the central directory to locate entries; entries not listed in the central directory are not part of the OME-Zarr hierarchy. If several central directory records have the same name, readers MUST use the last one.
 
-OME-Zarr zip files MAY contain directory entries, i.e. zero-length entries whose names end with `/`.
-Directory entries are not Zarr keys and SHOULD be ignored by readers.
+OME-Zarr zip files MAY contain entries that are not Zarr keys, since Zarr itself does not prohibit them.
+This includes directory entries, i.e. zero-length entries whose names end with `/`.
+Readers SHOULD ignore entries that they do not understand as Zarr keys.
 Directory entries are ignored by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
+Other entries that are not `zarr.json` files are subject to the `jsonFirst` parameter like any other record: if `jsonFirst` is `true`, they follow all `zarr.json` records.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED. They are intended to ensure that reading OME-Zarr zip files is similarly performant as reading from other storage formats (see the _Performance_ section):
 
@@ -260,7 +264,8 @@ The zip comment is intended to provide metadata pertinent to the zip file struct
 
 The zip comment is encoded as JSON so that future versions of the OME-Zarr specification can add parameters to it, enabling parameterized features beyond versioning.
 The keys under the top-level `ome` attribute are strictly defined by this specification and are extended only by future versions of the specification.
-Other top-level keys of the JSON object are permitted and are meant to allow composition with other specifications.
+This specification governs only the keys under `ome`, and readers MUST understand all keys under `ome`.
+Other top-level keys of the JSON object are not governed by this specification; they are permitted and are meant to allow composition with other specifications.
 Other specifications and conventions, for example a future Zarr convention for thumbnails, can compose with OME-Zarr zip files in two ways: through metadata inside the Zarr hierarchy, which is part of the contents of the OME-Zarr and is stored like any other entry, and through a top-level key of their own in the archive comment, next to `ome`.
 Readers that do not understand such a key are expected to ignore it.
 
