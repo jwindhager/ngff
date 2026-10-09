@@ -185,6 +185,10 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
    This list may be extended in future versions of this specification.
 8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
 
+OME-Zarr zip files MAY contain directory entries, i.e. zero-length entries whose names end with `/`.
+Directory entries are not Zarr keys and SHOULD be ignored by readers.
+Like all other entries that are not `zarr.json` files, directory entries are subject to the `jsonFirst` parameter described below: if `jsonFirst` is `true`, they follow all `zarr.json` records in the central directory.
+
 A validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements above.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED. They are intended to ensure that reading OME-Zarr zip files is similarly performant as reading from other storage formats (see the _Performance_ section):
