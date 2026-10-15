@@ -85,9 +85,10 @@ Specifically:
 To minimize implementation effort and maximize compatibility, this RFC proposes a concrete archive file format as a single-file OME-Zarr storage container.
 
 ### The choice of ZIP
-The ZIP archive file format was chosen for its simplicity, widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage (see _Proposal_ section).
+The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage (see _Proposal_ section).
+While the ZIP file format itself is not simple, having accumulated many optional features (e.g. encryption, multiple compression methods, multi-volume archives, extra fields) over several decades, much of that complexity is handled by mature, freely available libraries, and this RFC excludes or discourages the features that are not needed for OME-Zarr (see _Specification_ section below).
 
-Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .odt, .ods, .odg).
+Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .ods, .odg).
 
 Since widespread adoption of single-file OME-Zarr across languages and tools is a primary goal of this RFC (see _Overview_), the choice of ZIP (over e.g. a bespoke binary format, see _Alternatives_ below) was weighed specifically against that goal:
 
@@ -102,6 +103,14 @@ This RFC weighs that additional per-implementation effort, and the resulting ris
 Considering the intended use cases for zipped OME-Zarr, the advantages discussed above were considered to outweigh the disadvantages of the ZIP archive file format, such as its limitations in efficiently writing and accessing file contents (see _Drawbacks, risks, alternatives, and unknowns_ section below).
 
 ### Configuring ZIP for OME-Zarr
+This RFC refers to the ZIP file format as defined in the [PKWARE .ZIP File Format Specification (APPNOTE.TXT)](https://pkware.cachefly.net/webdocs/APPNOTE/APPNOTE-6.3.10.TXT), version 6.3.10 being the most recent version at the time of writing.
+Since the ZIP specification has evolved over time, it is worth noting that OME-Zarr zip files only rely on long-established features of the format, i.e. uncompressed (STORE) entries, the central directory and the ZIP64 format extension, all of which have been part of the specification since version 4.5 (2001) and are supported by virtually all current ZIP libraries.
+Later additions to the specification mostly concern compression and encryption methods, which this RFC excludes for OME-Zarr zip files (see _Specification_ section below).
+
+The central directory, located near the end of a ZIP archive, is the technical foundation for efficient access to OME-Zarr zip files:
+it lists all entries of the archive together with their offsets, so that readers can locate individual `zarr.json` files and Zarr chunks/shards without reading or scanning the entire archive.
+OME-Zarr zip files therefore rely on the central directory as the authoritative index of their contents; local file headers that are not referenced by the central directory (e.g. obsolete entries left behind after modifying an archive) are not part of the OME-Zarr hierarchy.
+
 ZIP archives are traditionally associated with deflate compression which would have redundancy with the per-chunk compression existing in Zarr.
 Changes in the size of files and compressed chunks could lead to significant fragmentation within a ZIP archive.
 
@@ -143,7 +152,7 @@ This section specifies how to store an OME-Zarr hierarchy within a single file.
 
 #### OME-Zarr zip files
 
-An OME-Zarr hierarchy MAY be stored within a ZIP archive.
+An OME-Zarr hierarchy MAY be stored within a ZIP archive, as defined in the [PKWARE .ZIP File Format Specification (APPNOTE.TXT)](https://pkware.cachefly.net/webdocs/APPNOTE/APPNOTE-6.3.10.TXT).
 
 For a ZIP file to be referred to as an OME-Zarr zip file the following conditions MUST be met:
 
@@ -151,6 +160,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 2. The root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy. The ZIP file MUST contain the OME-Zarr's root-level `zarr.json`.
 3. OME-Zarr zip files MUST NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
 4. OME-Zarr zip files MUST NOT be split into multiple parts.
+5. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy. Readers MUST use the central directory to locate entries; entries not listed in the central directory are not part of the OME-Zarr hierarchy.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED:
 
@@ -370,7 +380,7 @@ As mentioned by the authors, performance aspects of storing raster image data in
 This proposal adds a new feature to the OME-Zarr specification.
 As such, it is fully backwards-compatible, but not forwards-compatible.
 Implementations are expected to adopt the added support for OME-Zarr zip files.
-This RFC applies only to OME-Zarr v0.5 and later, which dependend on Zarr version 3.
+This RFC applies only to OME-Zarr v0.5 and later, which depend on Zarr version 3.
 
 ## Testing
 

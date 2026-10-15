@@ -41,6 +41,7 @@ Thank you for pushing us to spell this out; we expanded the Proposal section acc
 
 We also take your point on "simplicity" specifically: the ZIP file format itself, as laid out in the full APPNOTE specification, is not simple — it has accumulated many optional features (encryption, multiple compression methods, multi-volume archives, extra fields, etc.) over three decades.
 What we meant, and should have stated more precisely, is that a lot of that complexity is already handled by mature, freely available libraries, so implementers of OME-Zarr zip file support rarely need to engage with the ZIP specification directly, let alone with the features this RFC does not recommend or prohibits.
+We have rephrased the corresponding paragraph in the RFC accordingly, and now explicitly reference the APPNOTE specification, noting that OME-Zarr zip files only rely on features available since its version 4.5.
 
 In summary, our reasoning for choosing ZIP is primarily:
 
