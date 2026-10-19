@@ -87,7 +87,7 @@ To minimize implementation effort and maximize compatibility, this RFC proposes 
 ### The choice of ZIP
 The ZIP archive file format was chosen for its simplicity, widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage (see _Proposal_ section).
 
-Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .odt, .ods, .odg).
+Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .odp, .ods, .odg).
 
 Since widespread adoption of single-file OME-Zarr across languages and tools is a primary goal of this RFC (see _Overview_), the choice of ZIP (over e.g. a bespoke binary format, see _Alternatives_ below) was weighed specifically against that goal:
 
