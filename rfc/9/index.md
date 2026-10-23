@@ -35,7 +35,7 @@ Specifically, this RFC aims to:
 - **Standardize existing practice** by formally specifying how to store OME-Zarr hierarchies in ZIP archives.
   This aims to facilitate interoperability among tools, to prevent suboptimal packaging of data, and to contribute to the standardization goals of the OME-NGFF community in general.
 
-The RFC proposes to require the ZIP archive root to match the OME-Zarr root, recommends performance optimizations (disabled ZIP compression, use of sharding codec, order of ZIP file entries), prohibits nested or multi-part ZIP archives, and defines a new file extension for OME-Zarr zip files.
+The RFC proposes to require the ZIP archive root to match the OME-Zarr root, prohibits ZIP-level compression, nested or multi-part ZIP archives and ZIP archive-level encryption, recommends performance optimizations (use of sharding codec, order of ZIP file entries), and defines a new file extension for OME-Zarr zip files.
 
 ## Background
 
@@ -110,14 +110,16 @@ In order to avoid inconsistencies when renaming OME-Zarr zip files, this RFC pro
 In other words, according to this specification, the OME-Zarr's root-level `zarr.json` MUST be located in the root of the ZIP archive and not in a subfolder within the ZIP archive.
 Potential problems (e.g. loss of data) resulting from "accidentally" extracting the ZIP archive in-place (e.g. using on-board tooling of some operating systems) can be alleviated by introducing a custom file extension (see below).
 
-To facilitate efficient storage and access of OME-Zarr zip files, a set of essential ZIP/Zarr parameters are recommended in this RFC:
+To facilitate efficient storage and access of OME-Zarr zip files, a set of essential ZIP/Zarr parameters are specified or recommended in this RFC.
+ZIP-level compression is prohibited: all entries MUST use the STORE method (no compression).
+This avoids unnecessary compression of already compressed data (e.g. when using Zarr compression codecs) and makes it easier to directly conduct partial reads of the ZIP archive.
+This restriction may be relaxed in the future, e.g. for `zarr.json` documents.
+The following are recommended:
 
 - Use the ZIP64 format.
   ZIP64 is required once a ZIP archive exceeds 4 GiB, contains more than 65,535 entries, or has entries at offsets beyond 4 GiB.
   Using ZIP64 from the start, at the cost of a few extra bytes per entry, allows OME-Zarr zip files to grow beyond these limits without a change in format.
   This is a recommendation rather than a requirement because not all ZIP libraries currently offer an option to write ZIP64 for small archives; OME-Zarr zip files that do not use ZIP64 remain valid.
-- Disable ZIP-level compression.
-  This avoids unnecessary compression of already compressed data (e.g. when using Zarr compression codecs) and makes it easier to directly conduct partial reads of the ZIP archive.
 - Use the Zarr sharding codec.
   This reduces the number of records in the central directory.
 - Include all `zarr.json` files at the beginning of the file and at the beginning of the central directory in a breadth-first order, starting with the root-level `zarr.json` as the first entry.
@@ -129,6 +131,21 @@ This RFC explicitly prohibits embedding an OME-Zarr zip file as subhierarchy of 
 In particular this prohibits "recursive zipping", the embedding of an OME-Zarr zip file within a parent OME-Zarr zip file.
 
 Furthermore, this RFC prohibits splitting up the ZIP archive into multiple files ("multi-volume archives"), in favor of directory-backed OME-Zarr and Zarr's sharding codec.
+
+Likewise, this RFC prohibits encryption at the ZIP archive level, since readers are not expected to handle passwords or decryption and an encrypted archive could not be opened by generic OME-Zarr tooling.
+Encryption at the codec level may be applicable to Zarr in general, but is out of scope for this RFC.
+
+#### Access and mutability
+
+Streaming an OME-Zarr zip file from beginning to end is not a goal of this RFC.
+As with the rest of Zarr, remote access is intended to use range-read requests, which are available from standard HTTP servers and object storage services such as S3.
+Client software is expected to retrieve the central directory, located near the end of the archive, without reading the entire archive, and then read the individual entries it needs.
+
+Some mutability of OME-Zarr zip files is expected.
+Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
+Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
+Mutation is, however, not efficient for every workload (see _Drawbacks, risks, alternatives, and unknowns_ below).
+For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
 
 Finally, this RFC also defines a new file extension to be used specifically with OME-Zarr zip files.
 This should enable file type detection (in absence of a magic number), improve user experience (e.g. by enabling file type association), avoid "accidental" in-place extraction (e.g. using on-board tooling of some operating systems) and encourage the use of OME-Zarr-specific tooling for creating OME-Zarr zip files (to follow the recommendations listed earlier).
@@ -153,25 +170,42 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 2. The root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy. The ZIP file MUST contain the OME-Zarr's root-level `zarr.json`.
 3. OME-Zarr zip files MUST NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
 4. OME-Zarr zip files MUST NOT be split into multiple parts.
+5. OME-Zarr zip files MUST NOT use ZIP archive-level encryption.
+6. ZIP-level compression MUST NOT be used: all ZIP entries MUST use the STORE method. Compression is expected to be performed by Zarr-level codecs.
+7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) other than the following standard metadata fields:
+   - ZIP64 extended information (header ID `0x0001`),
+   - Extended timestamp (header ID `0x5455`),
+   - Info-ZIP New Unix (header ID `0x7875`).
+
+   This list may be extended in future versions of this specification.
+8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
+
+A validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements above.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED:
 
 1. The ZIP64 format extension SHOULD be used, irrespective of the ZIP file size.
-2. ZIP-level compression SHOULD be disabled in favor of Zarr-level compression codecs.
-3. The sharding codec SHOULD be used to reduce the number of entries within the ZIP archive.
-4. The root-level `zarr.json` file SHOULD be the first ZIP file entry and the first entry in the central directory header; other `zarr.json` files SHOULD follow immediately afterwards, in breadth-first order.
-5. The name of OME-Zarr zip files SHOULD end with `.ozx`.
-6. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
+2. The sharding codec SHOULD be used to reduce the number of entries within the ZIP archive.
+3. The root-level `zarr.json` file SHOULD be the first ZIP file entry and the first entry in the central directory header; other `zarr.json` files SHOULD follow immediately afterwards, in breadth-first order.
+4. The name of OME-Zarr zip files SHOULD end with `.ozx`.
+5. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
 
 #### OME-Zarr Zip Comment Structure
 
 The zip comment is intended to provide metadata pertinent to the zip file structure, such as information about the ordering of entries within the central directory. It is not intended for storing metadata about the OME-Zarr's content. Such content-related metadata should be stored within the OME-Zarr hierarchy.
+
+The zip comment is encoded as JSON so that future versions of the OME-Zarr specification can add parameters to it, enabling parameterized features beyond versioning.
+The keys under the top-level `ome` attribute are strictly defined by this specification and are extended only by future versions of the specification.
+Other top-level keys of the JSON object are permitted and are meant to allow composition with other specifications.
 
 The `ome` attribute in the zip archive comment MAY contain a `zipFile` attribute, which in turn MAY contain a `centralDirectory` attribute. The `centralDirectory` attribute provides metadata about the central directory's structure and content.
 
 The `centralDirectory` attribute MAY contain the following key:
 
 - `jsonFirst`: If `true`, this indicates that the `zarr.json` files are ordered breadth-first in the central directory and precede other content, as recommended above. This allows the hierarchical structure of the contents to be discovered without parsing the entire central directory, which could contain many entries of Zarr chunks. Implementations MAY assume that no further `zarr.json` files exist beyond the first non-`zarr.json` file if `jsonFirst` is `true`. If `jsonFirst` is omitted, the value defaults to `false`.
+  The intended use is to let viewers of OME-Zarr zip files, similar to tree views in HDF5 viewers such as HDFView or h5web, quickly display the structure of the hierarchy before reading any array data, and to support features such as auto-completion.
+  Without `jsonFirst` set to `true`, a reader has to parse the entire central directory to be sure that the whole structure has been discovered.
+  `jsonFirst` is a parameter because `false` is a valid value: files that do not order their entries this way remain valid OME-Zarr zip files, although ordering is recommended for the use cases above.
 
 For example,
 ```json
