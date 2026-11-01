@@ -119,7 +119,7 @@ Response to [comment 4](https://ngff.openmicroscopy.org/rfc/9/comments/4/index.h
 
 ## Comment 5
 
-Response to [comment 5](https://ngff.openmicroscopy.org/rfc/9/comments/5/index.html) by Anna Kreshuk, Dominik Kutra, and Dominik Kutra, Ilastik.
+Response to [comment 5](https://ngff.openmicroscopy.org/rfc/9/comments/5/index.html) by Anna Kreshuk, Dominik Kutra, and Benedikt Best, Ilastik.
 
 ### Minor comments and questions
 
@@ -130,3 +130,7 @@ This suggestion has now been adopted.
 > Duplication of "the" in "The ZIP file MUST contain the the OME-Zarr's root-level zarr.json."
 
 This typo has now been corrected.
+
+## Comment 6
+
+Response to [comment 6](https://ngff.openmicroscopy.org/rfc/9/comments/6/index.html) by Assa Diabira, Institut Cochin (IMAG'IC / CID), Université Paris Cité, France.
