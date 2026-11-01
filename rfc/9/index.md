@@ -244,13 +244,15 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 
    This list may be extended in future versions of this specification.
 8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
-9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy. Readers MUST use the central directory to locate entries; entries not listed in the central directory are not part of the OME-Zarr hierarchy.
+9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy.
 
 OME-Zarr zip files MAY contain entries that are not Zarr keys, since Zarr itself does not prohibit them.
 This includes directory entries, i.e. zero-length entries whose names end with `/`.
-Readers SHOULD ignore entries that they do not understand as Zarr keys.
 Directory entries are ignored by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
 Other entries that are not `zarr.json` files are subject to the `jsonFirst` parameter like any other record: if `jsonFirst` is `true`, they follow all `zarr.json` records.
+
+Readers MUST use the central directory to locate entries; local file headers that are not referenced by the central directory are not part of the OME-Zarr hierarchy.
+Readers SHOULD ignore entries that they do not understand as Zarr keys.
 
 A validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements above.
 
