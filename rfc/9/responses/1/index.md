@@ -182,7 +182,7 @@ Regarding the question on `jsonFirst`: it does not make offsets of all chunks av
 > Are the contents of a zipped OME-Zarr file intended to be mutable?
 
 Some mutability is expected: the archive can be appended to, files can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
-The recommendation to use ZIP64 is meant to support this by allowing archives to continue growing.
+We have not adopted the recommendation to disallow ZIP-specific mutation, because the recommendations of the RFC (ZIP64, writing the central directory at the end of a writing session, removing duplicate records) set up the archive to allow for some updates of the data (see also the response to comment 5).
 We agree with the reviewer's observation that mutation has costs (a rewritten central directory, orphaned entries, and a possibly spoiled "`zarr.json` first" ordering, see the _Drawbacks_ section), and we have not adopted mitigations such as a padded header, in order to keep the format compatible with general-purpose ZIP libraries.
 For massively parallel changes, it is expected that the Zarr arrays are extracted, modified, and then repacked.
 We have stated this in the RFC.
