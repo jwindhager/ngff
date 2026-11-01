@@ -1,3 +1,32 @@
+---
+authors:
+  - name: Jonas Windhager
+    github: jwindhager
+    affiliation: SciLifeLab / Uppsala University, Sweden
+    role: Corresponding Author
+    date: "2025-07-02"
+  - name: Norman Rzepka
+    github: normanrz
+    affiliation: scalable minds GmbH, Germany
+    role: Co-author
+    date: "2025-08-27"
+  - name: Mark Kittisopikul
+    github: mkitti
+    affiliation: HHMI Janelia, United States
+    role: Co-author
+    date: "2025-08-27"
+editors:
+  - name: Josh Moore
+    github: joshmoore
+    affiliation: German BioImaging e.V.
+    role: Editor
+    date: "2025-11-05"
+reference_pr: https://github.com/ome/ngff/pull/316
+manual_status: R4
+description: Zipped OME-Zarr
+date: "2025-07-02"
+---
+
 # RFC-9: Zipped OME-Zarr
 
 ```{toctree}
@@ -13,14 +42,9 @@ Add a specification for storing an OME-Zarr hierarchy within a ZIP archive.
 
 ## Status
 
-This RFC is currently in state `R2` (waiting on reviewers).
+```{rfc-status}
 
-| Name              | GitHub Handle | Institution                             | Date       | Status                                                          |
-| ----------------- | ------------- | --------------------------------------- | ---------- | --------------------------------------------------------------- |
-| Jonas Windhager   | @jwindhager   | SciLifeLab / Uppsala University, Sweden | 2025-07-02 | Corresponding Author [PR](https://github.com/ome/ngff/pull/316) |
-| Norman Rzepka     | @normanrz     | scalable minds GmbH, Germany            | 2025-08-27 | Co-author [PR](https://github.com/ome/ngff/pull/316)            |
-| Mark Kittisopikul | @mkitti       | HHMI Janelia, United States             | 2025-08-27 | Co-author [PR](https://github.com/ome/ngff/pull/316)            |
-| Josh Moore        | @joshmoore    | German BioImaging e.V.                  | 2025-11-05 | Editor                                                          |
+```
 
 ## Overview
 

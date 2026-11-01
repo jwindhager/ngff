@@ -1,3 +1,54 @@
+---
+authors:
+  - name: John Bogovic
+    github: bogovicj
+    affiliation: HHMI Janelia
+    role: Corresponding Author; Implemented
+    date: "2024-07-30"
+  - name: Davis Bennett
+    github: d-v-b
+    role: Implemented validation
+    date: "2024-07-30"
+  - name: Luca Marconato
+    github: LucaMarconato
+    affiliation: EMBL
+    role: Implemented
+    date: "2024-07-30"
+  - name: Matt McCormick
+    github: thewtex
+    affiliation: ITK
+    role: Implemented
+    date: "2024-07-30"
+  - name: Stephan Saalfeld
+    github: axtimwalde
+    affiliation: HHMI Janelia
+    role: Implemented (with JB)
+    date: "2024-07-30"
+  - name: Johannes Soltwedel
+    github: jo-mueller
+    affiliation: German BioImaging e.V.
+    role: Corresponding Author; Implemented
+    date: "2025-10-07"
+endorsers:
+  - name: Will Moore
+    github: will-moore
+    affiliation: University of Dundee
+    role: Implemented
+    date: "2025-10-23"
+  - name: David Stansby
+    github: dstansby
+    affiliation: University College London
+    role: Implemented
+    date: "2025-10-23"
+  - name: Norman Rzepka
+    github: normanrz
+    affiliation: Scalable Minds
+    date: "2024-08-22"
+manual_status: S3
+description: Coordinate systems and transformations
+date: "2024-07-30"
+---
+
 # RFC-5: Coordinate Systems and Transformations
 (rfcs:rfc5:version3)=
 
@@ -14,27 +65,14 @@ Add named coordinate systems and expand and clarify coordinate transformations. 
 
 ## Status
 
-This RFC is currently in RFC state `R4` (authors prepare responses).
-
-| **Role** | Name | GitHub Handle | Institution | Date | Status |
-|----------|------|---------------|-------------|------|--------|
-| **Author** | John Bogovic | @bogovicj | HHMI Janelia | 2024-07-30 | (Corresponding Author) Implemented |
-| **Author** | Davis Bennett | @d-v-b | | 2024-07-30 | Implemented validation |
-| **Author** | Luca Marconato | @LucaMarconato | EMBL | 2024-07-30 | Implemented |
-| **Author** | Matt McCormick | @thewtex | ITK | 2024-07-30 | Implemented |
-| **Author** | Stephan Saalfeld | @axtimwalde | HHMI Janelia | 2024-07-30 | Implemented (with JB) |
-| **Author** | Johannes Soltwedel | @jo-mueller | German Bioimaging e.V. | 2025-10-07 | (Corresponding Author) Implemented |
-| **Endorser** | Will Moore | @will-moore | University of Dundee | 2025-10-23 | Implemented |
-| **Endorser** | David Stansby | @dstansby | University College London | 2025-10-23 | Implemented |
-| **Endorser** | Norman Rzepka | @normanrz | Scalable Minds | 2024-08-22 | |
-| **Reviewer** | Dan Toloudis, David Feng, Forrest Collman, Nathalie GAudreault, Gideon Dunster | toloudis, dyf, fcollman | Allen Institutes | 2024-11-28 | [Review](rfcs:rfc5:review1) |
-| **Reviewer** | Will Moore, Jean-Marie Burel, Jason Swedlow | will-moore, jburel, jrswedlow | University of Dundee | 2025-01-22 | [Review](rfcs:rfc5:review2)|
+```{rfc-status}
+```
 
 ## Overview
 
 This RFC provides first-class support for spatial and coordinate transformations in OME-Zarr.
 
-Working version title: **0.6.dev3**
+Version associated with this document: **0.6.dev3**
 
 ## Background
 
@@ -1153,6 +1191,16 @@ choose between different options, or software could choose a default (e.g. the f
 
 ## Changelog
 
-| Date       | Description                  | Link                                                                         |
-| ---------- | ---------------------------- | ---------------------------------------------------------------------------- |
-| 2024-10-08 | RFC assigned and published   | [https://github.com/ome/ngff/pull/255](https://github.com/ome/ngff/pull/255) |
+| Date       | Description                  | Link|
+| -  | -| - |
+| 2024-10-08 | RFC assigned and published | [https://github.com/ome/ngff/pull/255](https://github.com/ome/ngff/pull/255) |
+| 2025-07-01 | First reviews | [Review 1](./reviews/1/index.md), [Review 2](./reviews/2/index.md) |
+| 2025-11-26 | First specification draft published | [https://github.com/ome/ngff-spec/releases/tag/0.6.dev1](https://github.com/ome/ngff-spec/releases/tag/0.6.dev1) |
+| 2025-08-01 | [Revised version submitted and published](./versions/2/index.md) | [https://github.com/ome/ngff/pull/350](https://github.com/ome/ngff/pull/350) |
+| 2025-12-02 | Revised specification published (0.6.dev2) | [https://github.com/ome/ngff-spec/releases/tag/0.6.dev2](https://github.com/ome/ngff-spec/releases/tag/0.6.dev2) |
+| 2025-12-01 | Second reviews, RFC accepted with minor revisions | [Review 1](./reviews/1b/index.md), [Review 2](./reviews/2b/index.md) |
+| 2026-01-16 | RFC revised and published | [https://github.com/ome/ngff/pull/389](https://github.com/ome/ngff/pull/389) |
+| 2026-03-13 | Revised specification published (0.6.dev3) | [https://github.com/ome/ngff-spec/releases/tag/0.6.dev3](https://github.com/ome/ngff-spec/releases/tag/0.6.dev3) |
+| 2026-04-28 | Revised specification published (0.6.dev4) | [https://github.com/ome/ngff-spec/releases/tag/0.6.dev4](https://github.com/ome/ngff-spec/releases/tag/0.6.dev4) |
+
+[Detailed summary of changes](../../specifications/dev/version_history.md)

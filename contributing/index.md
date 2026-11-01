@@ -3,55 +3,44 @@
 Thanks for taking the time to contribute to the `OME-Zarr` specification!
 We welcome contributions from anyone.
 
-The below sections explain how to contributed in different ways to the
-`OME-Zarr` specification.
+Below you find links and guidelines on how to contribute to specific parts of the NGFF project.
 
-## Changes to the specification
-
-Any suggested major changes to the `OME-Zarr` specification should be opened as
-request for comment (RFC) documents.
-
-In the future we will flesh out this page with a guide to RFCs, but in the
-meantime the RFC process is outlined in the
-[Implementation section of RFC 1](../rfc/1/index.md#implementation).
-
-### Comment on a Request For Comment (RFC)
-
-If you want to leave a suggestion or comment on an RFC that is under review,
-please leave a comment in a new page under the "comments/" directory for the
-relevant RFC. A template is also available for formatting your comment:
-[template](../rfc/1/templates/review_template).
-
-### How to change the specification
-
-To make a change such as the end-product of an RFC or a minor correction to the currently developed specification version,
-please do so via a pull request (PR) against the `main` branch of the [ome/ngff-spec](https://github.com/ome/ngff-spec) repository.
-This repository contains the specification documents in Markdown format,
-json examples and the schema files for validation.
-
-## Changes to this website
-
-The repository for this website is [ome/ngff](https://github.com/ome/ngff).
-Contributions to these pages are welcome as issues or PRs.
-
-To do so, create a fork of the ``ome/ngff`` repository, make your changes,
-and submit a pull request (PR) against the `main` branch.
-
-### Syntax
-This repository uses Sphinx to publish a ReadTheDocs site at https://ngff.openmicroscopy.org in the [Sphinx Book Theme](https://sphinx-book-theme.readthedocs.io/en/stable/).
-
-[MyST](https://myst-parser.readthedocs.io/en/latest/) syntax can be used in addition to basic Markdown and HTML.
-
-### Configuration
-Edit [conf.py](./conf.py) with options from the [Sphinx Book Theme](https://sphinx-book-theme.readthedocs.io/en/stable/). The [PyData Sphinx Theme](https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide) user guide may also have more up to date instructions for configuration properties.
-
-### Previews
-Each PR receives a unique preview URL of the format `https://ngff--<PR#>.org.readthedocs.build/` where `<PR#>` is the PR number. This link is also posted to each PR by the Github actions bot in an "Automated Review URLs" comment as the "Readthedocs" link.
-
-Please check that your changes render correctly at this URL. New commits will automatically be live at the PR url after a few minutes.
+```{toctree}
+:maxdepth: 1
+:glob:
+*/index
+```
 
 ## Contributing to OME
 (contributing:ome)=
 
 Detailed guidance for contributing developers is available at
 [https://docs.openmicroscopy.org/contributing/](https://docs.openmicroscopy.org/contributing/)
+
+
+## Authorship
+
+NGFF is a collective and community-driven effort, and we welcome contributions from anyone.
+Acknowledgement of contributions is important to us,
+and we provide ways to to credit contributors for their work in different places of the NGFF ecosystem.
+
+For authorship of the specification itself,
+a list of authors is maintained in the `authors.yml` file in the [ngff-spec](https://github.com/ome/ngff-spec) repository.
+The list of authors in this file is organized in two tiers:
+- First category: Those who have contributed to the development of the spec through the RFC process
+  in the form of RFC authorship, reviewing, commenting or editorial work.
+- Second category: Those who have contributed in any form to the development of the specification under the [ngff-spec repository](https://github.com/ome/ngff-spec).
+  This includes, but not limited to, all contributions to the specification text, schemas, examples or other content in the ngff-spec repository.
+Upon release of a new version, the list of authors in the `authors.yml` file will be synced to a citeable DOI via Zenodo,
+which can be used for citation of the specification in publications and other works.
+
+To ensure the visibility of all contributions to the broader ecosystem that are not directly related to specification development,
+a list of contributors is maintained in the [ome-zarr-acknowledgements](https://github.com/german-BioImaging/ome-zarr-acknowledgments/) repository,
+which is displayed on the [community page](community:contributors).
+Any contribution to the NGFF ecosystem can be acknowledged in this repository, including but not limited to
+- Contribution to spec development
+- Maintenance of software implementations of ome-zarr
+- Development of tools and utilities for working with ome-zarr
+- Development of documentation and educational materials for ome-zarr
+- Organization of or participation in events and workshops related to ome-zarr
+- Any other contribution that has an impact on the development and adoption of ome-zarr

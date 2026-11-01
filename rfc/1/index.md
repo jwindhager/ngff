@@ -1,5 +1,53 @@
+---
+authors:
+  - name: Josh Moore
+    github: joshmoore
+    affiliation: German BioImaging, e.V.
+    affiliation_url: https://ror.org/05tpnw772
+    role: Author
+    date: "2023-12-23"
+endorsers:
+  - name: Jean-Marie Burel
+    github: jburel
+    affiliation: University of Dundee
+    date: "2024-09-09"
+    reference: https://github.com/ome/ngff/pull/258
+  - name: Will Moore
+    github: will-moore
+    affiliation: University of Dundee
+    date: "2024-09-09"
+    reference: https://github.com/ome/ngff/pull/258
+  - name: Juan Nunez-Iglesias
+    github: jni
+    affiliation: Monash University
+    date: "2024-09-09"
+    reference: https://github.com/ome/ngff/pull/258
+  - name: Norman Rzepka
+    github: normanrz
+    affiliation: scalable minds GmbH
+    date: "2024-09-09"
+    reference: https://github.com/ome/ngff/pull/258
+  - name: Jan Eglinger
+    github: imagejan
+    affiliation: FMI Basel
+    date: "2024-09-09"
+    reference: https://github.com/ome/ngff/pull/258
+  - name: Joel Lüthi
+    github: jluethi
+    affiliation: BioVisionCenter, University of Zurich
+    date: "2024-09-10"
+    reference: https://github.com/ome/ngff/pull/258
+reference_pr: https://github.com/ome/ngff/pull/222
+manual_status: S4
+description: RFC Process
+ome_zarr_version: "N/A"
+date: "2024-02-21"
+---
+
 RFC-1: RFC Process
 ==================
+
+(rfcs:rfc1)=
 
 Definition of the NGFF “Request for Comment” (RFC) process
 
@@ -15,115 +63,7 @@ versions/index
 
 ## Status
 
-This RFC has been adopted (S4).
-
-```{list-table} Record
-:widths: 8, 20, 20, 20, 15, 10
-:header-rows: 1
-:stub-columns: 1
-
-*   - Role
-    - Name
-    - GitHub Handle
-    - Institution
-    - Date
-    - Status
-*   - Author
-    - Josh Moore
-    - [joshmoore](https://github.com/joshmoore)
-    - [German BioImaging, e.V.](https://ror.org/05tpnw772)
-    - 2023-12-23
-    - Author ([PR](https://github.com/ome/ngff/pull/222)) 
-*   - Reviewer
-    - Davis Bennett, John Bogovic, Michael Innerberger, Mark Kittisopikul, Virginia Scarlett, Yurii Zubov
-    - d-v-b, bogovicj, minnerbe, mkitti, virginiascarlett, yuriyzubov 
-    - Janelia
-    - 2024-02-26
-    - [Review](./reviews/2/index)
-*   - Reviewer
-    - Kevin Yamauchi, Virginie Uhlmann
-    - kevinyamauchi, vuhlmann
-    - ETH, BiovisionCenter
-    - 2024-03-05
-    - [Review](./reviews/1/index)
-*   - Reviewer
-    - Matthew Hartley
-    - mrmh2
-    - EMBL-EBI
-    - 2024-03-05
-    - [Review](./reviews/3/index)
-*   - Commenter
-    - Wouter-Michiel Vierdag, Luca Marconato
-    - melonora, LucaMarconato
-    - EMBL
-    - 2024-01-13
-    - [Comment](./comments/1/index)
-*   - Commenter
-    - Matt McCormick
-    - thewtex
-    - ITK
-    - 2024-01-09
-    - [Comment](./comments/2/index)
-*   - Author
-    - Josh Moore
-    - joshmoore
-    - German BioImaging
-    - 2024-08-29
-    - [Response](./responses/1/index)
-*   - Endorser
-    - Jean-Marie Burel
-    - jburel
-    - University of Dundee
-    - 2024-09-09
-    - [Endorse](https://github.com/ome/ngff/pull/258)
-*   - Endorser
-    - Will Moore
-    - will-moore
-    - University of Dundee
-    - 2024-09-09
-    - [Endorse](https://github.com/ome/ngff/pull/258)
-*   - Endorser
-    - Juan-Nuñez Iglesias
-    - jni
-    - Monash University
-    - 2024-09-09
-    - [Endorse](https://github.com/ome/ngff/pull/258)
-*   - Endorser
-    - Norman Rzepka
-    - normanrz
-    - scalable minds GmbH
-    - 2024-09-09
-    - [Endorse](https://github.com/ome/ngff/pull/258)
-*   - Endorser
-    - Jan Eglinger
-    - imagejan
-    - FMI Basel
-    - 2024-09-09
-    - [Endorse](https://github.com/ome/ngff/pull/258)
-*   - Endorser
-    - Joel Lüthi
-    - jluethi
-    - BioVisionCenter, University of Zurich
-    - 2024-09-10
-    - [Endorse](https://github.com/ome/ngff/pull/258)
-*   - Reviewer
-    - Kevin Yamauchi, Joel Lüthi, Virginie Uhlmann
-    - kevinyamauchi, jluethi, vuhlmann
-    - ETH, BiovisionCenter
-    - 2024-10-03
-    - [Accept](./reviews/1b/index)
-*   - Reviewer
-    - Matthew Hartley
-    - mrmh2
-    - EMBL-EBI
-    - 2024-10-08
-    - Accept (email)
-*   - Reviewer
-    - John Bogovic, Michael Innerberger, Virginia Scarlett
-    - bogovicj, minnerbe, virginiascarlett
-    - Janelia
-    - 2024-10-11
-    - [Accept](./reviews/2b/index)
+```{rfc-status}
 ```
 
 ## Overview
@@ -238,6 +178,7 @@ right direction. **Reviewers** should strive to provide feedback which informs *
 
 **Commenters** are other members of the community who, though not contacted as **Reviewers**, have provided feedback that they would like added to the official record of the RFC.
 
+(rfc1-implementation)=
 ## Implementation
 
 The RFC process can be represented as a state diagram with the various stakeholders responsible for forward motion.
@@ -322,7 +263,8 @@ to the **Editors**, either via a public PR adding the review in markdown to the
 RFC's subdirectory or by emailing the **Editors** directly. (This latter course
 should only be used when necessary.)
 
-(rfc-recommendations)= Possible recommendations from **Reviewers** in ascending order of support are:
+(rfc-recommendations)= 
+Possible recommendations from **Reviewers** in ascending order of support are:
 
 * “Reject” suggests that a **Reviewer** considers there to be no merit to an
   RFC. This should be a last recourse. Instead, suggestions in a “Major
@@ -367,7 +309,8 @@ contact **Reviewers** to see if their recommendations have changed.
 
 > 🕑 Authors responses to Reviewers should be returned to the Editors in less than two weeks.
 
-(anchor-rebuttal-r6)= This brings a critical, and possibly iterative, decision point (R6).  If all **Reviewers** `approve` and there are no further changes needed, the RFC can progress to S1 as soon as there are two in-progress implementations. If the **Reviewers** do _not_ approve, then the **Editors** will make one of three decisions (R7):
+(anchor-rebuttal-r6)= 
+This brings a critical, and possibly iterative, decision point (R6).  If all **Reviewers** `approve` and there are no further changes needed, the RFC can progress to S1 as soon as there are two in-progress implementations. If the **Reviewers** do _not_ approve, then the **Editors** will make one of three decisions (R7):
 
 * The **Editors** MAY provide **Authors** a list of necessary changes. These will be based on the **Reviewers** suggestions but possibly modified, e.g., to remove contradictions.
 * The **Editors** MAY decide that the RFC is to be closed (R9). This is the decision that SHOULD be chosen if there is a unanimous `Reject` recommendation. The **Authors** MAY then decide to re-draft a new RFC (D2).
