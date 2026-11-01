@@ -446,7 +446,7 @@ Alternatives:
   However, this would similarly harm aforementioned standardization efforts and would further restrict file contents to single volumes.
 - **Use an archive file format other than ZIP**.
   Among other reasons, the ZIP format was chosen for its widespread adoption and support for chunked file access (see _Proposal_ section).
-  Other widely used formats, such as TAR, could possibly be adapted to enable chunked file access, but the gained advantages over ZIP were not considered to outweigh the required specification complexity and additional implementation effort. In particular, TAR does not have a central directory, which is required for efficient random access to file contents.
+  Other widely used formats, such as TAR, lack a built-in central directory, so efficient random access would require an additional index (e.g. appended to the archive or stored alongside it) that would have to be specified and implemented separately. The gained advantages over ZIP were not considered to outweigh this additional specification complexity and implementation effort.
 - **Use a custom, purpose-built binary format** instead of an existing container format.
   Such a format could minimize complexity by embedding structural (e.g. chunk/shard offset) metadata up front, tailored specifically to OME-Zarr, and would only require a single reader/writer code path, avoiding some of the disadvantages of the ZIP format discussed above.
   However, unlike ZIP, it would need to be implemented essentially from scratch, without existing libraries to build on, in every language and toolkit intending to support single-file OME-Zarr.
