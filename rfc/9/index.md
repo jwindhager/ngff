@@ -374,7 +374,7 @@ Socialization: see Prior art and references; the draft was further discussed amo
 ### Zarr libraries
 - [zarr-python](https://github.com/zarr-developers/zarr-python) has a ZipStore.
 - [zarr-java](https://github.com/zarr-developers/zarr-java) has OME-Zarr metadata support and a ZipStore, which adheres to the RFC-9 specification.
-- [zarrita.js](https://github.com/manzt/zarrita.js) is a JavaScript library for reading and writing OME-Zarr files, including .ozx files.
+- [zarrita.js](https://github.com/manzt/zarrita.js) has a read-only ZipFileStore, which supports remote access via HTTP range requests.
 - [zarrs](https://github.com/zarrs/zarrs_zip) has a ZipStore and a [converter for .ozx](https://github.com/clbarnes/ozx).
 - [tensorstore](https://google.github.io/tensorstore/kvstore/zip/index.html) has a ZipFileStore.
 
