@@ -1,4 +1,14 @@
-# **RFC-4: Review 3**
+---
+authors:
+  - name: Dave Horsfall
+    github: davehorsfall
+    affiliation: Haniffa Lab
+    date: "2026-02-27"
+recommendation: minor_changes
+date: "2026-02-27"
+---
+
+# RFC-4: Review 3
 
 (rfcs:rfc4:review3)=
 
@@ -6,7 +16,12 @@
 * [https://ngff.openmicroscopy.org/rfc/4/](https://ngff.openmicroscopy.org/rfc/4/)
 * [https://ngff.openmicroscopy.org/rfc/1/templates/review\_template.html](https://ngff.openmicroscopy.org/rfc/1/templates/review_template.html)
 
-**Review Authors**: Dave Horsfall
+## Review Authors
+
+```{document-authors}
+
+```
+
 **Conflicts of Interest**: None declared
 
 This review was primarily generated through discussions during a Hannifa Lab meeting, which involved diverse roles, including wet lab scientists, clinicians, bioinformaticians, data scientists, and engineers. I have tried to capture the key points of discussion in this review.
