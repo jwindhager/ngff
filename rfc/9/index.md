@@ -142,16 +142,13 @@ The central directory, located near the end of a ZIP archive, is the technical f
 it lists all entries of the archive together with their offsets, so that readers can locate individual `zarr.json` files and Zarr chunks/shards without reading or scanning the entire archive.
 OME-Zarr zip files therefore rely on the central directory as the authoritative index of their contents; local file headers that are not referenced by the central directory (e.g. obsolete entries left behind after modifying an archive) are not part of the OME-Zarr hierarchy.
 
-ZIP archives are traditionally associated with deflate compression which would have redundancy with the per-chunk compression existing in Zarr.
-Changes in the size of files and compressed chunks could lead to significant fragmentation within a ZIP archive.
-
 To enable the intended user experience (e.g. avoid additional prompting of users when opening OME-Zarr zip files), the location of the OME-Zarr root relative to the ZIP archive root needs to be specified.
 In order to avoid inconsistencies when renaming OME-Zarr zip files, this RFC proposes to require the ZIP archive root to coincide with the OME-Zarr root directory.
 In other words, according to this specification, the OME-Zarr's root-level `zarr.json` MUST be located in the root of the ZIP archive and not in a subfolder within the ZIP archive.
 Potential problems (e.g. loss of data) resulting from "accidentally" extracting the ZIP archive in-place (e.g. using on-board tooling of some operating systems) can be alleviated by introducing a custom file extension (see below).
 
 To facilitate efficient storage and access of OME-Zarr zip files, a set of essential ZIP/Zarr parameters are specified or recommended in this RFC.
-ZIP-level compression is prohibited: all entries MUST use the STORE method (no compression).
+Although ZIP archives are traditionally associated with deflate compression, ZIP-level compression is prohibited: all entries MUST use the STORE method (no compression).
 This avoids unnecessary compression of already compressed data (e.g. when using Zarr compression codecs) and makes it easier to directly conduct partial reads of the ZIP archive.
 This restriction may be relaxed in the future, e.g. for `zarr.json` documents.
 The following are recommended:
@@ -411,7 +408,7 @@ Drawbacks:
     It may be advantageous to extract individual files to manipulate them and then rebuild the archive when processing is complete rather than trying to modify files within the archive.
   - **Removing a file from a zip archive, may not reduce the file size of an archive depending on the implementation**.
     Removing a file from a zip archive may only remove the file's entry in the central directory.
-    Free space within a zip archive is not explicitly tracked and thus cannot be easily reclaimed or reused.
+    Free space within a zip archive is not explicitly tracked and thus cannot be easily reclaimed or reused, so repeated modification fragments the archive.
     Therefore, it is not recommended to overwrite or delete files within a zip archive frequently such as during image processing operations.
   - **Sharding constrains partial writes**.
     Partial writes of a shard are impractical unless the final size of each shard is known in advance, so it is often not recommended to shard an axis that is acquired sequentially (e.g. a Z-axis acquired slice by slice cannot be written chunk by chunk when sharded along Z, unless the codec pipeline produces a fixed size or a whole slice constitutes a single shard).
