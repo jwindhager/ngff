@@ -77,7 +77,7 @@ Response to [review 2](https://ngff.openmicroscopy.org/rfc/9/reviews/2/index.htm
 
 > The RFC only applies to OME-Zarrs with metadata in zarr.json (not .zattr / .zarray) which implies at least OME Zarr v0.5. Is it worth explicitly mentioning this in the RFC? This might make sense in the ‘Compatibility’ section.
 
-Agreed. We have added a clarifying note to the Compatibility section stating that this RFC applies only to OME-Zarr hierarchies with metadata in `zarr.json` (i.e. OME-Zarr v0.5 and later), and does not apply to hierarchies using the legacy `.zattrs`/`.zarray` metadata files (OME-Zarr v0.4 and earlier).
+Agreed. We have added the following sentence to the Compatibility section: "This RFC applies only to OME-Zarr v0.5 and later, which depend on Zarr version 3." Since Zarr version 3 stores metadata in `zarr.json`, hierarchies with `.zattrs`/`.zarray` metadata (OME-Zarr v0.4 and earlier) are not covered.
 
 ### Minor comments and questions
 
