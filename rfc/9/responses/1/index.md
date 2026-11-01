@@ -1,6 +1,23 @@
+---
+authors:
+  - name: Jonas Windhager
+    github: jwindhager
+    affiliation: SciLifeLab / Uppsala University, Sweden
+  - name: Norman Rzepka
+    github: normanrz
+    affiliation: scalable minds GmbH, Germany
+  - name: Mark Kittisopikul
+    github: mkitti
+    affiliation: HHMI Janelia, United States
+date: "2026-11-01"
+---
+
 # RFC-9: Response 1
 
 (rfcs:rfc9:response1)=
+
+```{document-authors}
+```
 
 ## Review 1
 
