@@ -109,8 +109,8 @@ Specifically:
 To minimize implementation effort and maximize compatibility, this RFC proposes a concrete archive file format as a single-file OME-Zarr storage container.
 
 ### The choice of ZIP
-The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage (see _Proposal_ section).
-While the ZIP file format itself is not simple, having accumulated many optional features (e.g. encryption, multiple compression methods, multi-volume archives, extra fields) over several decades, much of that complexity is handled by mature, freely available libraries, and this RFC excludes or discourages the features that are not needed for OME-Zarr (see _Specification_ section below).
+The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage.
+While the ZIP file format itself is not simple, having accumulated many optional features (e.g. encryption, multiple compression methods, multi-volume archives, extra fields) over several decades, much of that complexity is handled by mature, freely available libraries, and this RFC excludes most of these features for OME-Zarr zip files (see _Specification_ section below).
 
 Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .ods, .odg).
 
