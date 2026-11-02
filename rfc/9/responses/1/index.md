@@ -210,7 +210,7 @@ Recovery is not a primary goal of this RFC, and we do not specify additional rec
 
 Yes: we expect reading OME-Zarr zip files to be comparable to reading other Zarr stores when readers use range requests and the recommendations are followed.
 We have rewritten the _Performance_ section of the RFC to summarize the most relevant findings of the existing external evaluations (see also the response to comment 5 below), and to state this expectation.
-We have measured central directory costs on synthetic archives (scripts in `scripts/rfc9/`): parsing time and central directory size grow linearly with the number of entries (about 0.6 s and 59 MB at one million entries with a minimal parser), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in time independent of the number of entries. These measurements are local and do not include network latency. [Open: summarize these results in the RFC; random-access chunk read latency compared to an unzipped store has not been measured.]
+We have measured central directory costs on synthetic archives (scripts in [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples)): parsing time and central directory size grow linearly with the number of entries (about 0.6 s and 59 MB at one million entries with a minimal parser), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in time independent of the number of entries. These measurements are local and do not include network latency. [Open: summarize these results in the RFC; random-access chunk read latency compared to an unzipped store has not been measured.]
 The _Drawbacks_ section already describes the logic that readers may need to optimize lookups (parsing the central directory into a hash table or sorting it).
 
 ##### Use cases
@@ -248,11 +248,11 @@ Regarding "Validators MUST reject ozx files violating these constraints": we agr
 
 > **Provide implementation guidance**: Show concrete examples of constructing ozx files, demonstrate performance characteristics, and highlight some languages/libraries that meet the spec's constraints.
 
-We have added implementation guidance as scripts and notes that accompany the RFC (the `scripts/rfc9/` directory):
+We have added implementation guidance as scripts and notes that accompany the RFC (the [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples) repository):
 
 - **Examples of constructing .ozx files**: self-contained writers for Python with the standard library `zipfile` and with the third-party package `stream-zip`, and for Java with the JDK alone and with Apache Commons Compress. They are tested against the checker described below.
 - **A checker** (`check_ozx.py`) that tests the MUST requirements of this RFC on a local file or a URL using range requests. It found no violations of the checked requirements in the 51 example datasets listed in Zipglancer.
-- **Library notes** (`scripts/rfc9/examples/README.md`) that state, for each library tested, which of the requirements and recommendations it can meet and where it falls short, e.g. the lack of control over the central directory order, the lack of an archive comment in the JDK zip file system and in `stream-zip`, and differences in how libraries write ZIP64 (see also the ZIP64 recommendations in the RFC). The RFC lists the libraries and tools that support OME-Zarr zip files in its _Implementation_ section.
+- **Library notes** ([`examples/README.md`](https://github.com/jwindhager/ngff-rfc9-examples/blob/main/examples/README.md)) that state, for each library tested, which of the requirements and recommendations it can meet and where it falls short, e.g. the lack of control over the central directory order, the lack of an archive comment in the JDK zip file system and in `stream-zip`, and differences in how libraries write ZIP64 (see also the ZIP64 recommendations in the RFC). The RFC lists the libraries and tools that support OME-Zarr zip files in its _Implementation_ section.
 - **Performance characteristics**: the _Performance_ section summarizes external evaluations, and a benchmark script measures central directory costs (see the response on performance).
 
 ### Minor comments and questions
