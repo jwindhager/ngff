@@ -328,7 +328,7 @@ Drawbacks:
   - **File content is not necessarily page-aligned**.
     Compared to a directory store, the content of a file within a ZIP archive does not generally start at a page boundary of the storage device.
     Implementers using unbuffered, page-aligned I/O reported a significant performance impact for both reading and writing, due to read-modify-write cycles.
-    This can be avoided by allocating a separate page for each local file header, including for chunks inside shards and the shard index, and leaving partially filled pages empty.
+    This can be avoided by allocating a separate page for each local file header, i.e. for each entry such as a shard or an unsharded chunk, and leaving partially filled pages empty.
     This comes at the cost of additional space, which is acceptable when sharding is used and chunks are not very small.
   - **Individual file headers may describe obsolete files**.
     While the central directory contains the canonical list of files near the end of a zip archive, obsolete files and their file headers may still be present earlier in the archive.
