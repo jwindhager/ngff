@@ -165,7 +165,7 @@ In particular this prohibits "recursive zipping", the embedding of an OME-Zarr z
 
 Furthermore, this RFC prohibits splitting up the ZIP archive into multiple files ("multi-volume archives"), in favor of directory-backed OME-Zarr and Zarr's sharding codec.
 
-Likewise, this RFC prohibits encryption at the ZIP archive level, since readers are not expected to handle passwords or decryption and an encrypted archive could not be opened by generic OME-Zarr tooling.
+Likewise, this RFC prohibits encryption of ZIP entries and of the central directory, since readers are not expected to handle passwords or decryption and an encrypted file could not be opened by generic OME-Zarr tooling.
 Encryption at the codec level may be applicable to Zarr in general, but is out of scope for this RFC.
 
 #### Access and mutability
