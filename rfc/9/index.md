@@ -219,6 +219,7 @@ When creating OME-Zarr zip files, the following are RECOMMENDED. They are intend
 3. All `zarr.json` records SHOULD precede all other records in the central directory. In this case, the `jsonFirst` parameter of the archive comment SHOULD be set to `true` (see below). Within the `zarr.json` records, the root-level `zarr.json` SHOULD come first and the other `zarr.json` records SHOULD follow in breadth-first order. The order in which the entries themselves are stored in the archive is not restricted.
 4. The name of OME-Zarr zip files SHOULD end with `.ozx`.
 5. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
+6. Writers SHOULD remove central directory records with duplicate names at the end of a writing session, so that each name occurs only once.
 
 #### OME-Zarr Zip Comment Structure
 
