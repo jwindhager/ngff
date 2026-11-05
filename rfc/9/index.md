@@ -203,7 +203,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 2. The root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy. The ZIP file MUST contain the OME-Zarr's root-level `zarr.json`.
 3. OME-Zarr zip files MUST NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
 4. OME-Zarr zip files MUST NOT be split into multiple parts.
-5. OME-Zarr zip files MUST NOT use ZIP archive-level encryption.
+5. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory.
 6. ZIP-level compression MUST NOT be used: all ZIP entries MUST use the STORE method. Compression is expected to be performed by Zarr-level codecs.
 7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) other than the following standard metadata fields:
    - ZIP64 extended information (header ID `0x0001`),
