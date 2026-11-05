@@ -186,7 +186,7 @@ Some mutability of OME-Zarr zip files is expected.
 Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
 The central directory may contain records with the same name transiently while an archive is being appended to; writers SHOULD remove such duplicates from the central directory at the end of a writing session.
 Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
-Mutation is, however, not efficient for every workload (see _Drawbacks, risks, alternatives, and unknowns_ below).
+Mutation is, however, not efficient for every workload: modified or removed entries leave obsolete data in the archive, and repeated modification fragments it (see _Drawbacks, risks, alternatives, and unknowns_ below).
 For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
 An unzipped OME-Zarr may provide better write performance, especially when writes are parallelized.
 The recommendations of this RFC allow for some updates of the data in an OME-Zarr zip file while acknowledging this limitation.
