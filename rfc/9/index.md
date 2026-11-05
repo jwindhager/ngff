@@ -173,6 +173,7 @@ Encryption at the codec level may be applicable to Zarr in general, but is out o
 Streaming an OME-Zarr zip file from beginning to end is not a goal of this RFC.
 As with the rest of Zarr, remote access is intended to use range-read requests, which are available from standard HTTP servers and object storage services such as S3.
 Client software is expected to retrieve the central directory, located near the end of the archive, without reading the entire archive, and then read the individual entries it needs.
+Recovery of corrupted or partially transferred archives is not a goal of this RFC.
 
 Some mutability of OME-Zarr zip files is expected.
 Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
