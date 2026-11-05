@@ -438,7 +438,7 @@ Alternatives:
 - **Do not specify a single-file variant** of OME-Zarr.
   Drawbacks of this alternative were discussed extensively in the _Background_ section of this RFC.
 - **Use HDF5 or a similar generic single-file container format** as storage backend instead of Zarr.
-  However, creating a "completely new" file format (e.g. "OME-HDF5"; as opposed to building upon OME-Zarr) would harm the standardization efforts of the OME-NGFF community. Additionally, efficient remote access to HDF5 (e.g. ROS3 driver, fsspec) typically requires specific file layouts and library builds and is less widely supported across languages than for Zarr; remote access is a requirement for the use cases of OME-Zarr.
+  However, creating a "completely new" file format (e.g. "OME-HDF5"; as opposed to building upon OME-Zarr) would harm the standardization efforts of the OME-NGFF community. Additionally, remote access to HDF5 files is possible (e.g. via the ROS3 driver or fsspec), but how efficient it is depends on the library build and on how the file is laid out, and support is less uniform across programming languages than for Zarr; efficient remote access is a requirement for the use cases of OME-Zarr.
 - **Use TIFF as storage backend** instead of Zarr, e.g. with the `zarr.json` contents embedded in the `ImageDescription` tag, and optionally appended with a Zarr shard index.
   However, this would similarly harm aforementioned standardization efforts and would further restrict file contents to single volumes.
 - **Use an archive file format other than ZIP**.
