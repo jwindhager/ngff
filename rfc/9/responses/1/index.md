@@ -200,8 +200,8 @@ Encryption at the codec level may be applicable to Zarr in general, but we consi
 > Is this a concern for ozx?
 
 Like other archive formats with a trailing index, a ZIP archive that is corrupted or only partially transferred is hard to use directly, because the central directory is at the end of the file.
-However, every entry is also preceded by a local file header that usually records its size, so recovery tools can often scan through the archive and rebuild the central directory.
-This may fail for entries whose size is only recorded after their data (data descriptors).
+However, every entry is also preceded by a local file header. Because all entries are stored uncompressed and the first local file header is at offset 0 of the file (see the Specification section), recovery tools can often scan forward through the archive from the start and rebuild the central directory.
+This may fail for entries whose size is only recorded after their data (data descriptors), because the end of such an entry cannot be found without the central directory.
 Recovery is not a primary goal of this RFC, and we do not specify additional recovery mechanisms.
 
 ##### Performance
