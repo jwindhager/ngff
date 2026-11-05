@@ -59,7 +59,7 @@ Specifically, this RFC aims to:
 - **Standardize existing practice** by formally specifying how to store OME-Zarr hierarchies in ZIP archives.
   This aims to facilitate interoperability among tools, to prevent suboptimal packaging of data, and to contribute to the standardization goals of the OME-NGFF community in general.
 
-The RFC proposes to require the ZIP archive root to match the OME-Zarr root, prohibits ZIP-level compression, nested or multi-part ZIP archives and ZIP archive-level encryption, recommends performance optimizations (use of sharding codec, order of ZIP file entries), and defines a new file extension for OME-Zarr zip files.
+The RFC proposes to require the ZIP archive root to match the OME-Zarr root, prohibits ZIP-level compression, nested or multi-part ZIP archives and ZIP encryption, recommends performance optimizations (use of sharding codec, order of ZIP file entries), and defines a new file extension for OME-Zarr zip files.
 
 ## Background
 
