@@ -272,7 +272,7 @@ We have changed the RFC accordingly: the recommendation now concerns only the ce
 For writers that cannot reorder the central directory, `jsonFirst` can be set to `false` (or omitted), which is valid.
 As the comment suggests, readers may also read the archive comment and the central directory first; this remains possible.
 [Open: confirm with co-authors that the order of the entries themselves is no longer recommended.]
-Regarding duplicate `zarr.json` entries observed when appending: the RFC now recommends that writers remove duplicate records from the central directory at the end of a writing session. [Open: define which record a reader should use if duplicates remain.]
+Regarding duplicate `zarr.json` entries observed when appending: the RFC recommends that writers remove duplicate records from the central directory at the end of a writing session, and requires readers to use the last record if duplicates remain, as Python's `zipfile` does. A reader that relies on `jsonFirst: true` to stop reading early can still miss a later duplicate `zarr.json`; writers are therefore asked to keep the `jsonFirst` flag consistent with the central directory.
 
 #### ZIP disadvantage in performance
 
