@@ -143,7 +143,7 @@ We have stated this in the RFC.
 
 > It should be stated whether ozx files are allowed to use this feature or not, and if so, how use of encryption impacts other requirements.
 
-Encryption at the archive level is not permitted.
+Encryption of ZIP entries or of the central directory is not permitted.
 We have added a MUST NOT requirement to the Specification section.
 Encryption at the codec level may be applicable to Zarr in general, but we consider it out of scope for this RFC.
 
