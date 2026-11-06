@@ -64,7 +64,7 @@ We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and 
 > The 'preview' aspect makes it tempting to want to embed a thumbnail, which could be supported by some applications or operating system plugins. Should this be explicitly forbidden / discouraged / encouraged in a standard way?
 
 We agree that thumbnails are particularly relevant for single-file use cases.
-However, we believe that thumbnail support applies to OME-Zarr, and to Zarr in general, and should therefore be proposed separately, preferably as a Zarr convention for thumbnails.
+However, we believe that thumbnail support applies to OME-Zarr, and to Zarr in general, and should therefore be proposed separately. A [Zarr convention for thumbnails](https://github.com/clbarnes/zarr-convention-thumbnails) has been proposed. The implementation of thumbnails and the integration of this convention into OME-Zarr are out of scope for this RFC.
 We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome` (see the section on the archive comment structure).
 
 ## Review 2
@@ -107,8 +107,7 @@ No: see the response above ("Versions of OME Zarr"); the RFC applies only to OME
 > [Neuroglancer link] with acl to public and CORS to allow all origins works.
 
 Thank you for testing this.
-The server that hosts the example dataset does not currently send CORS headers, which we confirmed, so browser-based viewers other than the linked Neuroglancer demo cannot read it directly; this is a property of the hosting, not of the format.
-We have added a note on the required CORS configuration to the _Tutorials and Examples_ section, and added a set of 51 example datasets, hosted in a bucket that allows cross-origin requests, to the _Implementation_ section. [Open: consider re-hosting `6001240.ozx` with CORS enabled.]
+We have moved the file hosting to [IDR](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx) and added a note on the required CORS configuration to the _Tutorials and Examples_ section, and added another set of 51 example datasets, hosted in a bucket that allows cross-origin requests, to the _Implementation_ section.
 
 > Tutorials and Examples -> [...] A short worked example of how to write/construct .ozx would be valuable.
 
@@ -182,7 +181,7 @@ Regarding the question on `jsonFirst`: it does not make offsets of all chunks av
 > Are the contents of a zipped OME-Zarr file intended to be mutable?
 
 Some mutability is expected: the archive can be appended to, files can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
-We have not adopted the recommendation to disallow ZIP-specific mutation, because the recommendations of the RFC (ZIP64, writing the central directory at the end of a writing session, removing duplicate records) set up the archive to allow for some updates of the data (see also the response to comment 5).
+Comment 5 recommends treating OME-Zarr zip files as read-only after the initial write and rewriting the whole file for any modification. We have not adopted this recommendation, because the recommendations of the RFC (ZIP64, writing the central directory at the end of a writing session, removing duplicate records) set up the archive to allow for some updates of the data (see the response to comment 5 below).
 We agree with the reviewer's observation that mutation has costs (a rewritten central directory, orphaned entries, and a possibly spoiled "`zarr.json` first" ordering, see the _Drawbacks_ section), and we have not adopted mitigations such as a padded header, in order to keep the format compatible with general-purpose ZIP libraries.
 For massively parallel changes, it is expected that the Zarr arrays are extracted, modified, and then repacked.
 We have stated this in the RFC.
@@ -191,7 +190,7 @@ We have stated this in the RFC.
 
 > It should be stated whether ozx files are allowed to use this feature or not, and if so, how use of encryption impacts other requirements.
 
-Encryption at the archive level is not permitted.
+Encryption of ZIP entries or of the central directory is not permitted.
 We have added a MUST NOT requirement to the Specification section.
 Encryption at the codec level may be applicable to Zarr in general, but we consider it out of scope for this RFC.
 
@@ -200,9 +199,9 @@ Encryption at the codec level may be applicable to Zarr in general, but we consi
 > Is this a concern for ozx?
 
 Like other archive formats with a trailing index, a ZIP archive that is corrupted or only partially transferred is hard to use directly, because the central directory is at the end of the file.
-However, every entry is also preceded by a local file header that usually records its size, so recovery tools can often scan through the archive and rebuild the central directory.
-This may fail for entries whose size is only recorded after their data (data descriptors).
-Recovery is not a primary goal of this RFC, and we do not specify additional recovery mechanisms.
+Since every entry is also preceded by a local file header, and since this RFC requires that no data precedes the first local file header, recovery tools can often scan forward through the archive and rebuild the central directory.
+This is not guaranteed, e.g. when entries were written with data descriptors (sizes recorded after the entry data), because the end of such an entry cannot be found without the central directory.
+Recovery is not a goal of this RFC, and we do not specify additional recovery mechanisms. We have stated this in the RFC.
 
 ##### Performance
 
@@ -234,15 +233,28 @@ Since the keys under `ome` are strictly defined by the specification and are ext
 Thank you for the concrete proposal.
 We have gone through the suggested list item by item:
 
-- **Encryption (any method):** adopted for the ZIP archive level. OME-Zarr zip files MUST NOT use ZIP encryption. Codec-level encryption is out of scope for this RFC.
+- **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory. Codec-level encryption is out of scope for this RFC.
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
 - **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents.
 - **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
-- **Extra fields containing non-Zarr data:** adopted in a refined form. ZIP extra fields do not carry Zarr data but per-entry metadata (e.g. the ZIP64 information, timestamps, Unix permissions), so we prohibit all extra fields except an enumerated set of standard metadata fields (ZIP64 extended information, extended timestamp, Info-ZIP New Unix). This lets us extend the list in future versions of the specification.
+- **Extra fields containing non-Zarr data:** adopted in a refined form.
+    - Most extra fields carry per-entry metadata rather than Zarr data (e.g. ZIP64 information, timestamps, Unix permissions), and a validator cannot tell what an unknown extra field contains. We therefore do not prohibit extra fields in general; readers can skip those they do not understand.
+    - Instead, requirement 7 prohibits extra fields that change how the bytes of an entry are to be interpreted.
+    - Extra fields known to be compliant (header IDs from APPNOTE 6.3.10):
+        - `0x0001`: ZIP64 extended information.
+        - `0x000a`, `0x5455`: NTFS and extended timestamps.
+        - `0x5855`, `0x7855`, `0x7875`: Info-ZIP UNIX owner and permission information.
+        - `0xa11e`, `0xa220`, `0xcafe`, `0xd935`: alignment and padding (Commons Compress, Microsoft Open Packaging, Java JAR, Android).
+        - `0x7075`, `0x6375`: Info-ZIP Unicode Path and Unicode Comment. They store the UTF-8 form of the file name and comment in the header, so they do not change which Zarr node an entry belongs to.
+    - Extra fields known to be non-compliant:
+        - `0x9901`: AE-x (WinZip AES) encryption structure.
+        - `0x0017`: Strong Encryption Header.
+        - `0x000f`: Patch Descriptor (the entry holds a patch against another file, not the content of a Zarr key).
+    - Records that carry encryption keys and certificates (`0x0019`, `0x0021`, `0x0022`, `0x0023`) accompany encryption, which is already prohibited.
 - **Self-extracting ZIP code:** adopted in a general form. OME-Zarr zip files MUST NOT contain any data before the first local file header, which prohibits self-extracting archives and other prepended stubs. This may be revisited in a future version of the specification.
 - **Mutation:** permitted, with the caveats described in the _Access and mutability_ subsection of the RFC (see also the response above).
 
-Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable. We have added a requirement that a validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
+Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable and have written them with that in mind. We have not added a requirement on validators themselves, since conformance of files is already defined by the MUST and MUST NOT requirements, and requirements on validators are an implementation detail that the RFC does not otherwise define. Requirement 7 is testable in part: the lists of compliant and non-compliant extra fields above can serve as the basis for a test. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
 
 #### Provide implementation guidance
 
@@ -368,7 +380,7 @@ We have changed the RFC accordingly: the recommendation now concerns only the ce
 For writers that cannot reorder the central directory, `jsonFirst` can be set to `false` (or omitted), which is valid.
 As the comment suggests, readers may also read the archive comment and the central directory first; this remains possible.
 [Open: confirm with co-authors that the order of the entries themselves is no longer recommended.]
-Regarding duplicate `zarr.json` entries observed when appending: the RFC now recommends that writers remove duplicate records from the central directory at the end of a writing session. [Open: define which record a reader should use if duplicates remain.]
+Regarding duplicate `zarr.json` entries observed when appending: the RFC recommends that writers remove duplicate records from the central directory at the end of a writing session, and requires readers to use the last record if duplicates remain, as Python's `zipfile` does. A reader that relies on `jsonFirst: true` to stop reading early can still miss a later duplicate `zarr.json`; writers are therefore asked to keep the `jsonFirst` flag consistent with the central directory.
 
 #### ZIP disadvantage in performance
 
@@ -376,7 +388,7 @@ Regarding duplicate `zarr.json` entries observed when appending: the RFC now rec
 
 Thank you for sharing this experience.
 We have added the lack of page alignment, the resulting read-modify-write cycles for unbuffered page-aligned I/O, and the mitigation of allocating a separate page per local file header (at the cost of additional space, acceptable with sharding) to the _Drawbacks_ section of the RFC.
-Note that padding by means of ZIP extra fields is not permitted by this RFC (see the requirement on extra fields); leaving unused space between entries, as described in the comment, remains possible.
+Besides leaving unused space between entries, as described in the comment, padding can also be achieved by means of alignment and padding extra fields, which are permitted by this RFC (see the requirement on extra fields).
 
 #### Sharding constraints
 
@@ -389,14 +401,14 @@ Agreed; we have added this to the _Drawbacks_ section and made the dependence of
 > ZIP requires CRC32 for file entries, which is useful for integrity verification, but it burdens implementations, especially for partial writes and reads. [...] clarifying recommended strategies (e.g., validating at shard or chunk granularity and deferring CRC checks for in-flight writes) would help implementers. [...] This point could be added under the drawback section in the RFC.
 
 We have added this to the _Drawbacks_ section, including the observation on hardware support for CRC-32C but not for the CRC-32 used by ZIP, which we attribute to the comment.
-The RFC now states that implementations may validate at shard or chunk granularity and defer CRC-32 checks for entries that are still being written. [Open: confirm with co-authors that this is meant as an allowance and not as a recommendation.]
+The _Drawbacks_ section now states, as implementation guidance and not as a requirement, that implementations may validate at the granularity of shards or chunks and defer CRC-32 checks for entries that are still being written. This is an allowance, not a recommendation, and it is not part of the specification text.
 
 #### ZIP disadvantage when updating
 
 > [...] we allowed in-place updates as long as the size does not grow beyond the existing space. As an example, we added capacity (padding) to allow in-place updates of metadata. (Similar to `tiffcomment` or `tiffset` on tiff files). [...] We just wanted to mention here how this could be mitigated in certain cases.
 
 Thank you; we have added this mitigation to the _Drawbacks_ section.
-Padding by means of ZIP extra fields is not permitted by this RFC (see the requirement on extra fields); reserving unused space between entries remains possible.
+Padding is possible either by means of alignment and padding ZIP extra fields, which are permitted by this RFC (see the requirement on extra fields), or by reserving unused space between entries.
 
 #### Split archives
 
@@ -409,7 +421,7 @@ Splitting remains a possible future extension; see the _Future possibilities_ se
 
 > Applications might benefit from pre-rendered thumbnails. [...] it might be a question if this should be a topic to be addressed by zipped OME-Zarr separately or if this is out of scope for this RFC.
 
-We consider this out of scope for this RFC. Thumbnails apply to Zarr in general and are probably best addressed by a Zarr convention for thumbnails, which we have added to the _Future possibilities_ section.
+We consider this out of scope for this RFC. Thumbnails apply to Zarr in general and are addressed by a [Zarr convention for thumbnails](https://github.com/clbarnes/zarr-convention-thumbnails), which has been proposed. The implementation of thumbnails and the integration of the convention into OME-Zarr are out of scope for this RFC; the latter is listed in the _Future possibilities_ section.
 We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome`, which readers that do not understand it are expected to ignore.
 The Open Packaging Conventions mentioned in the comment store thumbnails as separate parts of the package; OME-Zarr zip files may likewise contain entries that are not Zarr keys, since Zarr itself does not prohibit them (see the RFC).
 This specification governs only the keys under `ome` in the archive comment, all of which readers must understand; other top-level keys are not governed by it and are meant for composition.
@@ -449,8 +461,8 @@ We compared the terms with the current OME-Zarr specification.
 "Dataset" is not better defined: in the multiscales metadata, `datasets` denotes the arrays that store the individual resolution levels, and elsewhere the word is used informally (for example "high-content screening dataset" and "scene dataset"); "fileset" is used in the specification for the layout produced by `bioformats2raw`.
 We have therefore kept "hierarchy", and the RFC now defines the term "OME-Zarr hierarchy" once, as a Zarr hierarchy whose contents conform to the OME-Zarr specification.
 
-Regarding the possible roots: this RFC does not restrict the contents of the OME-Zarr that is stored, semantically or otherwise (see the item on semantic restrictions in the _Abandoned Ideas_ section), so the root of the archive is the root of whatever OME-Zarr hierarchy the specification permits, now or in the future.
-This avoids tying the single-file format to the set of root types of a particular version of the specification, which may be extended by the collections RFC. [Open: confirm with co-authors that the possible roots are intentionally not enumerated.]
+Regarding the possible roots: this RFC defers them to the OME-Zarr specification as a whole and neither adds restrictions nor adds possibilities. It does not restrict the contents of the OME-Zarr that is stored, semantically or otherwise (see the item on semantic restrictions in the _Abandoned Ideas_ section), so the root of the archive is the root of whatever OME-Zarr hierarchy the specification permits, now or in the future.
+This avoids tying the single-file format to the set of root types of a particular version of the specification, which may be extended by the collections RFC.
 
 #### Avoid appending
 
@@ -493,9 +505,3 @@ We have decided to defer a configurable root, i.e. locating the OME-Zarr hierarc
 For now, the root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy; this avoids additional prompts for users and inconsistencies when renaming OME-Zarr zip files.
 If the root is made configurable in the future, this could be done through a parameter in the archive comment (the keys under `ome` are defined by the specification and extended only by future versions of it).
 
-> **Note for co-authors:** please consider how difficult such a future change would be before this RFC is finalized. Points to examine, none of which is decided:
->
-> - A file with a configurable root would violate the current requirement that the root of the ZIP archive corresponds to the root of the OME-Zarr hierarchy. Readers that do not know the parameter would look for `zarr.json` at the archive root. Since readers MUST understand all keys under `ome`, a parameter added under `ome` in a later version would make older readers reject such a file instead of misreading it; is that the intended way to introduce it, and how should such files be distinguished from files that conform to this version (for example by the `ome.version` in the archive comment)?
-> - How would a root path interact with the `jsonFirst` parameter and the central directory order, with directory entries, and with the `.ozx` file type association (viewers currently do not need to prompt for a path)?
-> - Which of the use cases that motivated the feedback (SpatialData, the HCS specification) could be served instead by a different layout at the root of the archive, so that no parameter is needed?
-> - Is the archive comment, which is limited to 65,535 bytes and can be missing or lost when an archive is rewritten by generic tools, an acceptable place for a parameter that changes how the archive is interpreted?
