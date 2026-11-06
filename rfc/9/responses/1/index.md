@@ -401,7 +401,7 @@ Agreed; we have added this to the _Drawbacks_ section and made the dependence of
 > ZIP requires CRC32 for file entries, which is useful for integrity verification, but it burdens implementations, especially for partial writes and reads. [...] clarifying recommended strategies (e.g., validating at shard or chunk granularity and deferring CRC checks for in-flight writes) would help implementers. [...] This point could be added under the drawback section in the RFC.
 
 We have added this to the _Drawbacks_ section, including the observation on hardware support for CRC-32C but not for the CRC-32 used by ZIP, which we attribute to the comment.
-The RFC now states that implementations may validate at shard or chunk granularity and defer CRC-32 checks for entries that are still being written. [Open: confirm with co-authors that this is meant as an allowance and not as a recommendation.]
+The _Drawbacks_ section now states, as implementation guidance and not as a requirement, that implementations may validate at the granularity of shards or chunks and defer CRC-32 checks for entries that are still being written. This is an allowance, not a recommendation, and it is not part of the specification text.
 
 #### ZIP disadvantage when updating
 
