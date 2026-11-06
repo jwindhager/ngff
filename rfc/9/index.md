@@ -240,13 +240,12 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy.
 
 OME-Zarr zip files MAY contain entries that are not Zarr keys, since Zarr itself does not prohibit them.
-This includes directory entries, i.e. zero-length entries whose names end with `/`.
-Directory entries are ignored by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
+Readers MAY ignore directory entries, i.e. zero-length entries whose names end with `/`.
+Directory entries are not counted by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
 Other entries that are not `zarr.json` files are subject to the `jsonFirst` parameter like any other record: if `jsonFirst` is `true`, they follow all `zarr.json` records.
 
 Readers MUST use the central directory to locate entries; local file headers that are not referenced by the central directory are not part of the OME-Zarr hierarchy.
 If several central directory records have the same name, readers MUST use the last one.
-Readers SHOULD ignore entries that they do not understand as Zarr keys.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED. They are intended to ensure that reading OME-Zarr zip files is similarly performant as reading from other storage formats (see the _Performance_ section):
 
