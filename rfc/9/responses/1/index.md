@@ -77,7 +77,7 @@ Response to [review 2](https://ngff.openmicroscopy.org/rfc/9/reviews/2/index.htm
 
 > The RFC only applies to OME-Zarrs with metadata in zarr.json (not .zattr / .zarray) which implies at least OME Zarr v0.5. Is it worth explicitly mentioning this in the RFC? This might make sense in the ‘Compatibility’ section.
 
-Agreed. We have added a clarifying note to the Compatibility section stating that this RFC applies only to OME-Zarr hierarchies with metadata in `zarr.json` (i.e. OME-Zarr v0.5 and later), and does not apply to hierarchies using the legacy `.zattrs`/`.zarray` metadata files (OME-Zarr v0.4 and earlier).
+Agreed. We have added the following sentence to the Compatibility section: "This RFC applies only to OME-Zarr v0.5 and later, which depend on Zarr version 3." Since Zarr version 3 stores metadata in `zarr.json`, hierarchies with `.zattrs`/`.zarray` metadata (OME-Zarr v0.4 and earlier) are not covered.
 
 ### Minor comments and questions
 
@@ -134,7 +134,7 @@ In summary, our reasoning for choosing ZIP is primarily:
 
 - **Widespread, low-effort implementation support.** ZIP has near-ubiquitous library support across programming languages, so adding `.ozx` support is comparatively cheap for existing OME-Zarr implementations, even though the underlying format is not simple.
   Several implementations (e.g. [zarr-python](https://zarr.readthedocs.io/en/stable/user-guide/storage/#zip-store), [tensorstore](https://google.github.io/tensorstore/kvstore/zip/index.html), [zarrita.js](https://zarrita.dev/packages/storage.html#zipfilestore)) already had ZIP support before this RFC, which we take as evidence that this low effort holds in practice, precisely because implementers could build on existing libraries rather than the specification itself.
-- **Low effort scales from minimal to full-featured.** RFC-9 keeps the set of strict (MUST) requirements small, while the performance-related guidance (ZIP64, disabled compression, sharding, `jsonFirst` ordering) is RECOMMENDED rather than required.
+- **Low effort scales from minimal to full-featured.** RFC-9's strict (MUST) requirements mostly fix the layout and exclude ZIP features that every reader would otherwise have to support (e.g. encryption, ZIP-level compression, split archives), while the performance-related guidance (ZIP64, sharding, `jsonFirst` ordering) is RECOMMENDED rather than required.
   A minimal, spec-compliant reader/writer is therefore cheap to build, and [prototypes](https://github.com/clbarnes/ozx) have shown that a fully recommendation-compliant writer is feasible with only moderate additional complexity — i.e. there isn't a large cliff between "basic" and "full-featured" support.
 - **Chunked access on local and remote stores alike.** The central directory enables efficient partial reads not just on local filesystems, but also on HTTP(S), S3, and GCS via range requests, which matches how OME-Zarr is already accessed today.
 - **`.ozx` files are expected to be produced by OME-Zarr-aware tooling, not hand-zipped by end users.** We do not consider it a primary goal that users routinely feed `.ozx` files to a generic unzip tool, or that they modify them in place with generic ZIP tools; both remain possible but are not the design target.
@@ -181,7 +181,7 @@ Regarding the question on `jsonFirst`: it does not make offsets of all chunks av
 > Are the contents of a zipped OME-Zarr file intended to be mutable?
 
 Some mutability is expected: the archive can be appended to, files can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
-The recommendation to use ZIP64 is meant to support this by allowing archives to continue growing.
+Comment 5 recommends treating OME-Zarr zip files as read-only after the initial write and rewriting the whole file for any modification. We have not adopted this recommendation, because the recommendations of the RFC (ZIP64, writing the central directory at the end of a writing session, removing duplicate records) set up the archive to allow for some updates of the data (see the response to comment 5 below).
 We agree with the reviewer's observation that mutation has costs (a rewritten central directory, orphaned entries, and a possibly spoiled "`zarr.json` first" ordering, see the _Drawbacks_ section), and we have not adopted mitigations such as a padded header, in order to keep the format compatible with general-purpose ZIP libraries.
 For massively parallel changes, it is expected that the Zarr arrays are extracted, modified, and then repacked.
 We have stated this in the RFC.
@@ -199,8 +199,8 @@ Encryption at the codec level may be applicable to Zarr in general, but we consi
 > Is this a concern for ozx?
 
 Like other archive formats with a trailing index, a ZIP archive that is corrupted or only partially transferred is hard to use directly, because the central directory is at the end of the file.
-Since every entry is also preceded by a local file header, and since this RFC requires that entries are stored without ZIP-level compression and that no data precedes the first local file header, recovery tools can often scan forward through the archive and rebuild the central directory.
-This is not guaranteed, e.g. when entries were written with data descriptors (sizes recorded after the entry data).
+Since every entry is also preceded by a local file header, and since this RFC requires that no data precedes the first local file header, recovery tools can often scan forward through the archive and rebuild the central directory.
+This is not guaranteed, e.g. when entries were written with data descriptors (sizes recorded after the entry data), because the end of such an entry cannot be found without the central directory.
 Recovery is not a goal of this RFC, and we do not specify additional recovery mechanisms. We have stated this in the RFC.
 
 ##### Performance

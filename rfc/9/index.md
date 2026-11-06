@@ -109,15 +109,15 @@ Specifically:
 To minimize implementation effort and maximize compatibility, this RFC proposes a concrete archive file format as a single-file OME-Zarr storage container.
 
 ### The choice of ZIP
-The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage (see _Proposal_ section).
-While the ZIP file format itself is not simple, having accumulated many optional features (e.g. encryption, multiple compression methods, multi-volume archives, extra fields) over several decades, much of that complexity is handled by mature, freely available libraries, and this RFC excludes or discourages the features that are not needed for OME-Zarr (see _Specification_ section below).
+The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage.
+While the ZIP file format itself is not simple, having accumulated many optional features (e.g. encryption, multiple compression methods, multi-volume archives, extra fields) over several decades, much of that complexity is handled by mature, freely available libraries, and this RFC excludes most of these features for OME-Zarr zip files (see _Specification_ section below).
 
 Note that the ZIP archive file format is already being used to realize comparable single-file formats in other domains, such as Java archives (.jar), Office Open XML (.docx, .pptx, .xlsx), or OpenDocument (.odt, .ods, .odg).
 
-Since widespread adoption of single-file OME-Zarr across languages and tools is a primary goal of this RFC (see _Overview_), the choice of ZIP (over e.g. a bespoke binary format, see _Alternatives_ below) was weighed specifically against that goal:
+Since widespread adoption of single-file OME-Zarr across languages and tools is a primary goal of this RFC (see _Overview_), the choice of ZIP (over e.g. a bespoke binary format, see the alternatives below) was weighed specifically against that goal:
 
 - **Widespread, low-effort implementation support.** ZIP has near-ubiquitous library support across programming languages, so adding OME-Zarr zip file support is comparatively cheap for existing and new OME-Zarr implementations. Several implementations (e.g. zarr-python, tensorstore, zarrita.js) already had ZIP support before this RFC (see _Implementation_ section below), which this RFC takes as evidence that this low effort holds in practice.
-- **Low effort scales from minimal to full-featured.** This RFC keeps the set of strict (MUST) requirements small (see _Specification_ section below), while most performance-related guidance is RECOMMENDED rather than required. A minimal, spec-compliant reader/writer is therefore cheap to build, and prototypes have shown that a fully recommendation-compliant writer is feasible with only moderate additional complexity, i.e. there is no large cliff between minimal and full-featured support.
+- **Low effort scales from minimal to full-featured.** The strict (MUST) requirements of this RFC mostly fix the layout and exclude ZIP features that every reader would otherwise have to support (see _Specification_ section below), while most performance-related guidance is RECOMMENDED rather than required. A minimal, spec-compliant reader/writer is therefore cheap to build, and prototypes have shown that a fully recommendation-compliant writer is feasible with only moderate additional complexity, i.e. there is no large cliff between minimal and full-featured support.
 - **Chunked access on local and remote stores alike.** The central directory enables efficient partial reads not just on local file systems, but also on HTTP(S), S3, and GCS object stores via range requests, matching how OME-Zarr is already accessed today.
 - **OME-Zarr zip files are expected to be produced primarily by OME-Zarr-aware tooling**, not hand-zipped by end users with generic tools. The low implementation effort described above is intended to make it easy for such tools to adopt OME-Zarr zip file support, rather than to optimize for manual, generic-ZIP-tool-based workflows.
 
@@ -142,16 +142,13 @@ The central directory, located near the end of a ZIP archive, is the technical f
 it lists all entries of the archive together with their offsets, so that readers can locate individual `zarr.json` files and Zarr chunks/shards without reading or scanning the entire archive.
 OME-Zarr zip files therefore rely on the central directory as the authoritative index of their contents; local file headers that are not referenced by the central directory (e.g. obsolete entries left behind after modifying an archive) are not part of the OME-Zarr hierarchy.
 
-ZIP archives are traditionally associated with deflate compression which would have redundancy with the per-chunk compression existing in Zarr.
-Changes in the size of files and compressed chunks could lead to significant fragmentation within a ZIP archive.
-
 To enable the intended user experience (e.g. avoid additional prompting of users when opening OME-Zarr zip files), the location of the OME-Zarr root relative to the ZIP archive root needs to be specified.
 In order to avoid inconsistencies when renaming OME-Zarr zip files, this RFC proposes to require the ZIP archive root to coincide with the OME-Zarr root directory.
 In other words, according to this specification, the OME-Zarr's root-level `zarr.json` MUST be located in the root of the ZIP archive and not in a subfolder within the ZIP archive.
 Potential problems (e.g. loss of data) resulting from "accidentally" extracting the ZIP archive in-place (e.g. using on-board tooling of some operating systems) can be alleviated by introducing a custom file extension (see below).
 
 To facilitate efficient storage and access of OME-Zarr zip files, a set of essential ZIP/Zarr parameters are specified or recommended in this RFC.
-ZIP-level compression is prohibited: all entries MUST use the STORE method (no compression).
+Although ZIP archives are traditionally associated with deflate compression, ZIP-level compression is prohibited: all entries MUST use the STORE method (no compression).
 This avoids unnecessary compression of already compressed data (e.g. when using Zarr compression codecs) and makes it easier to directly conduct partial reads of the ZIP archive.
 This restriction may be relaxed in the future, e.g. for `zarr.json` documents.
 The following are recommended:
@@ -190,7 +187,7 @@ Some mutability of OME-Zarr zip files is expected.
 Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
 The central directory may contain records with the same name transiently while an archive is being appended to; writers SHOULD remove such duplicates from the central directory at the end of a writing session. If several central directory records have the same name, readers MUST use the last one.
 Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
-Mutation is, however, not efficient for every workload (see _Drawbacks, risks, alternatives, and unknowns_ below).
+Mutation is, however, not efficient for every workload: modified or removed entries leave obsolete data in the archive, and repeated modification fragments it (see _Drawbacks, risks, alternatives, and unknowns_ below).
 For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
 An unzipped OME-Zarr may provide better write performance, especially when writes are parallelized.
 The recommendations of this RFC allow for some updates of the data in an OME-Zarr zip file while acknowledging this limitation.
@@ -240,13 +237,15 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 6. ZIP-level compression MUST NOT be used: all ZIP entries MUST use the STORE method. Compression is expected to be performed by Zarr-level codecs.
 7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) that change how the bytes of the entry are to be interpreted, e.g. fields that signal encryption or an alternative compression or encoding of the entry data. Other extra fields, such as the ZIP64 extended information or timestamps, are allowed; readers skip extra fields they do not understand.
 8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
-9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy. Readers MUST use the central directory to locate entries; entries not listed in the central directory are not part of the OME-Zarr hierarchy. If several central directory records have the same name, readers MUST use the last one.
+9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy.
 
 OME-Zarr zip files MAY contain entries that are not Zarr keys, since Zarr itself does not prohibit them.
-This includes directory entries, i.e. zero-length entries whose names end with `/`.
-Readers SHOULD ignore entries that they do not understand as Zarr keys.
-Directory entries are ignored by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
+Readers MAY ignore directory entries, i.e. zero-length entries whose names end with `/`.
+Directory entries are not counted by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
 Other entries that are not `zarr.json` files are subject to the `jsonFirst` parameter like any other record: if `jsonFirst` is `true`, they follow all `zarr.json` records.
+
+Readers MUST use the central directory to locate entries; local file headers that are not referenced by the central directory are not part of the OME-Zarr hierarchy.
+If several central directory records have the same name, readers MUST use the last one.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED. They are intended to ensure that reading OME-Zarr zip files is similarly performant as reading from other storage formats (see the _Performance_ section):
 
@@ -356,8 +355,8 @@ Socialization: see Prior art and references; the draft was further discussed amo
 - [ngff-zarr](https://ngff-zarr.readthedocs.io/en/latest/) is a Python-based toolkit for working with .ozx files.
 
 ### Viewers
-- [Neuroglancer](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C907%5D%2C%22window%22:%5B0%2C1134%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%2C%22uiControlVisibility%22:%7B%7D%7D) of the [generated data](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx).
-- [Vizarr](https://biongff.github.io/vizarr/?source=https%253A%252F%252Flivingobjects.ebi.ac.uk%252Fidr%252Fzarr%252Fv0.5%252Fidr0062A%252Fozx%252F6001240.ozx) of the [generated data](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx).
+- A [Neuroglancer view](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C907%5D%2C%22window%22:%5B0%2C1134%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%2C%22uiControlVisibility%22:%7B%7D%7D) of the [generated data](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx).
+- A [Vizarr view](https://biongff.github.io/vizarr/?source=https%253A%252F%252Flivingobjects.ebi.ac.uk%252Fidr%252Fzarr%252Fv0.5%252Fidr0062A%252Fozx%252F6001240.ozx) of the [generated data](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx).
 - [WEBKNOSSOS](https://github.com/scalableminds/webknossos/pull/9738) is a web-based viewing and annotation platform that supports .ozx files.
 - [Zipglancer](https://github.com/JaneliaSciComp/zipglancer) is a client-side web explorer for ZIP and .ozx archives, using HTTP range requests, that reads the `jsonFirst` setting from the archive comment.
 
@@ -368,7 +367,7 @@ Socialization: see Prior art and references; the draft was further discussed amo
 ### Zarr libraries
 - [zarr-python](https://github.com/zarr-developers/zarr-python) has a ZipStore.
 - [zarr-java](https://github.com/zarr-developers/zarr-java) has OME-Zarr metadata support and a ZipStore, which adheres to the RFC-9 specification.
-- [zarrita.js](https://github.com/manzt/zarrita.js) is a JavaScript library for reading and writing OME-Zarr files, including .ozx files.
+- [zarrita.js](https://github.com/manzt/zarrita.js) has a read-only ZipFileStore, which supports remote access via HTTP range requests.
 - [zarrs](https://github.com/zarrs/zarrs_zip) has a ZipStore and a [converter for .ozx](https://github.com/clbarnes/ozx).
 - [tensorstore](https://google.github.io/tensorstore/kvstore/zip/index.html) has a ZipFileStore.
 
@@ -405,7 +404,7 @@ Drawbacks:
     It may be advantageous to extract individual files to manipulate them and then rebuild the archive when processing is complete rather than trying to modify files within the archive.
   - **Removing a file from a zip archive, may not reduce the file size of an archive depending on the implementation**.
     Removing a file from a zip archive may only remove the file's entry in the central directory.
-    Free space within a zip archive is not explicitly tracked and thus cannot be easily reclaimed or reused.
+    Free space within a zip archive is not explicitly tracked and thus cannot be easily reclaimed or reused, so repeated modification fragments the archive.
     Therefore, it is not recommended to overwrite or delete files within a zip archive frequently such as during image processing operations.
   - **Sharding constrains partial writes**.
     Partial writes of a shard are impractical unless the final size of each shard is known in advance, so it is often not recommended to shard an axis that is acquired sequentially (e.g. a Z-axis acquired slice by slice cannot be written chunk by chunk when sharded along Z, unless the codec pipeline produces a fixed size or a whole slice constitutes a single shard).
@@ -435,12 +434,12 @@ Alternatives:
 - **Do not specify a single-file variant** of OME-Zarr.
   Drawbacks of this alternative were discussed extensively in the _Background_ section of this RFC.
 - **Use HDF5 or a similar generic single-file container format** as storage backend instead of Zarr.
-  However, creating a "completely new" file format (e.g. "OME-HDF5"; as opposed to building upon OME-Zarr) would harm the standardization efforts of the OME-NGFF community. Additionally, library support for HDF5 is currently not optimized for remote storage, which is a requirement for the use cases of OME-Zarr.
+  However, creating a "completely new" file format (e.g. "OME-HDF5"; as opposed to building upon OME-Zarr) would harm the standardization efforts of the OME-NGFF community. Additionally, remote access to HDF5 files is possible (e.g. via the ROS3 driver or fsspec), but how efficient it is depends on the library build and on how the file is laid out, and support is less uniform across programming languages than for Zarr; efficient remote access is a requirement for the use cases of OME-Zarr.
 - **Use TIFF as storage backend** instead of Zarr, e.g. with the `zarr.json` contents embedded in the `ImageDescription` tag, and optionally appended with a Zarr shard index.
   However, this would similarly harm aforementioned standardization efforts and would further restrict file contents to single volumes.
 - **Use an archive file format other than ZIP**.
   Among other reasons, the ZIP format was chosen for its widespread adoption and support for chunked file access (see _Proposal_ section).
-  Other widely used formats, such as TAR, could possibly be adapted to enable chunked file access, but the gained advantages over ZIP were not considered to outweigh the required specification complexity and additional implementation effort. In particular, TAR does not have a central directory, which is required for efficient random access to file contents.
+  Other widely used formats, such as TAR, lack a built-in central directory, so efficient random access would require an additional index (e.g. appended to the archive or stored alongside it) that would have to be specified and implemented separately. The gained advantages over ZIP were not considered to outweigh this additional specification complexity and implementation effort.
 - **Use a custom, purpose-built binary format** instead of an existing container format.
   Such a format could minimize complexity by embedding structural (e.g. chunk/shard offset) metadata up front, tailored specifically to OME-Zarr, and would only require a single reader/writer code path, avoiding some of the disadvantages of the ZIP format discussed above.
   However, unlike ZIP, it would need to be implemented essentially from scratch, without existing libraries to build on, in every language and toolkit intending to support single-file OME-Zarr.
