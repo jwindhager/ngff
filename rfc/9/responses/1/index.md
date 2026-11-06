@@ -408,7 +408,7 @@ The _Drawbacks_ section now states, as implementation guidance and not as a requ
 > [...] we allowed in-place updates as long as the size does not grow beyond the existing space. As an example, we added capacity (padding) to allow in-place updates of metadata. (Similar to `tiffcomment` or `tiffset` on tiff files). [...] We just wanted to mention here how this could be mitigated in certain cases.
 
 Thank you; we have added this mitigation to the _Drawbacks_ section.
-Padding by means of ZIP extra fields is not permitted by this RFC (see the requirement on extra fields); reserving unused space between entries remains possible.
+Padding is possible either by means of alignment and padding ZIP extra fields, which are permitted by this RFC (see the requirement on extra fields), or by reserving unused space between entries.
 
 #### Split archives
 
