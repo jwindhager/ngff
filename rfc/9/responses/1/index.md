@@ -64,7 +64,7 @@ We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and 
 > The 'preview' aspect makes it tempting to want to embed a thumbnail, which could be supported by some applications or operating system plugins. Should this be explicitly forbidden / discouraged / encouraged in a standard way?
 
 We agree that thumbnails are particularly relevant for single-file use cases.
-However, we believe that thumbnail support applies to OME-Zarr, and to Zarr in general, and should therefore be proposed separately, preferably as a Zarr convention for thumbnails.
+However, we believe that thumbnail support applies to OME-Zarr, and to Zarr in general, and should therefore be proposed separately. A [Zarr convention for thumbnails](https://github.com/clbarnes/zarr-convention-thumbnails) has been proposed. The implementation of thumbnails and the integration of this convention into OME-Zarr are out of scope for this RFC.
 We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome` (see the section on the archive comment structure).
 
 ## Review 2
