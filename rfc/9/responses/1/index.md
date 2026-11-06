@@ -143,7 +143,7 @@ We have stated this in the RFC.
 
 > It should be stated whether ozx files are allowed to use this feature or not, and if so, how use of encryption impacts other requirements.
 
-Encryption at the archive level is not permitted.
+Encryption of ZIP entries or of the central directory is not permitted.
 We have added a MUST NOT requirement to the Specification section.
 Encryption at the codec level may be applicable to Zarr in general, but we consider it out of scope for this RFC.
 
@@ -154,7 +154,7 @@ Encryption at the codec level may be applicable to Zarr in general, but we consi
 Like other archive formats with a trailing index, a ZIP archive that is corrupted or only partially transferred is hard to use directly, because the central directory is at the end of the file.
 Since every entry is also preceded by a local file header, and since this RFC requires that entries are stored without ZIP-level compression and that no data precedes the first local file header, recovery tools can often scan forward through the archive and rebuild the central directory.
 This is not guaranteed, e.g. when entries were written with data descriptors (sizes recorded after the entry data).
-Recovery is not a primary goal of this RFC, and we do not specify additional recovery mechanisms.
+Recovery is not a goal of this RFC, and we do not specify additional recovery mechanisms. We have stated this in the RFC.
 
 ##### Performance
 
@@ -176,15 +176,28 @@ This is addressed in the response to comment 3 (see the corresponding section of
 Thank you for the concrete proposal.
 We have gone through the suggested list item by item:
 
-- **Encryption (any method):** adopted for the ZIP archive level. OME-Zarr zip files MUST NOT use ZIP encryption. Codec-level encryption is out of scope for this RFC.
+- **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory. Codec-level encryption is out of scope for this RFC.
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
 - **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents.
 - **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
-- **Extra fields containing non-Zarr data:** adopted in a refined form. ZIP extra fields do not carry Zarr data but per-entry metadata (e.g. the ZIP64 information, timestamps, Unix permissions), so we prohibit all extra fields except an enumerated set of standard metadata fields (ZIP64 extended information, extended timestamp, Info-ZIP New Unix). This lets us extend the list in future versions of the specification.
+- **Extra fields containing non-Zarr data:** adopted in a refined form.
+    - Most extra fields carry per-entry metadata rather than Zarr data (e.g. ZIP64 information, timestamps, Unix permissions), and a validator cannot tell what an unknown extra field contains. We therefore do not prohibit extra fields in general; readers can skip those they do not understand.
+    - Instead, requirement 7 prohibits extra fields that change how the bytes of an entry are to be interpreted.
+    - Extra fields known to be compliant (header IDs from APPNOTE 6.3.10):
+        - `0x0001`: ZIP64 extended information.
+        - `0x000a`, `0x5455`: NTFS and extended timestamps.
+        - `0x5855`, `0x7855`, `0x7875`: Info-ZIP UNIX owner and permission information.
+        - `0xa11e`, `0xa220`, `0xcafe`, `0xd935`: alignment and padding (Commons Compress, Microsoft Open Packaging, Java JAR, Android).
+        - `0x7075`, `0x6375`: Info-ZIP Unicode Path and Unicode Comment. They store the UTF-8 form of the file name and comment in the header, so they do not change which Zarr node an entry belongs to.
+    - Extra fields known to be non-compliant:
+        - `0x9901`: AE-x (WinZip AES) encryption structure.
+        - `0x0017`: Strong Encryption Header.
+        - `0x000f`: Patch Descriptor (the entry holds a patch against another file, not the content of a Zarr key).
+    - Records that carry encryption keys and certificates (`0x0019`, `0x0021`, `0x0022`, `0x0023`) accompany encryption, which is already prohibited.
 - **Self-extracting ZIP code:** adopted in a general form. OME-Zarr zip files MUST NOT contain any data before the first local file header, which prohibits self-extracting archives and other prepended stubs. This may be revisited in a future version of the specification.
 - **Mutation:** permitted, with the caveats described in the _Access and mutability_ subsection of the RFC (see also the response above).
 
-Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable. We have added a requirement that a validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
+Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable and have written them with that in mind. We have not added a requirement on validators themselves, since conformance of files is already defined by the MUST and MUST NOT requirements, and requirements on validators are an implementation detail that the RFC does not otherwise define. Requirement 7 is testable in part: the lists of compliant and non-compliant extra fields above can serve as the basis for a test. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
 
 ## Comment 1
 
@@ -227,7 +240,7 @@ Response to [comment 4](https://ngff.openmicroscopy.org/rfc/9/comments/4/index.h
 
 Thank you for sharing this experience.
 We have added the lack of page alignment, the resulting read-modify-write cycles for unbuffered page-aligned I/O, and the mitigation of allocating a separate page per local file header (at the cost of additional space, acceptable with sharding) to the _Drawbacks_ section of the RFC.
-Note that padding by means of ZIP extra fields is not permitted by this RFC (see the requirement on extra fields); leaving unused space between entries, as described in the comment, remains possible.
+Besides leaving unused space between entries, as described in the comment, padding can also be achieved by means of alignment and padding extra fields, which are permitted by this RFC (see the requirement on extra fields).
 
 ## Comment 5
 
