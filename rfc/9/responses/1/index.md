@@ -167,7 +167,7 @@ These are addressed in the responses to the performance and use case comments (s
 Thank you for the concrete proposal.
 We have gone through the suggested list item by item:
 
-- **Encryption (any method):** adopted for the ZIP archive level. OME-Zarr zip files MUST NOT use ZIP encryption. Codec-level encryption is out of scope for this RFC.
+- **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory. Codec-level encryption is out of scope for this RFC.
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
 - **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents.
 - **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
