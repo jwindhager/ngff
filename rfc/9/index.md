@@ -59,7 +59,7 @@ Specifically, this RFC aims to:
 - **Standardize existing practice** by formally specifying how to store OME-Zarr hierarchies in ZIP archives.
   This aims to facilitate interoperability among tools, to prevent suboptimal packaging of data, and to contribute to the standardization goals of the OME-NGFF community in general.
 
-The RFC proposes to require the ZIP archive root to match the OME-Zarr root, prohibits ZIP-level compression, nested or multi-part ZIP archives and ZIP archive-level encryption, recommends performance optimizations (use of sharding codec, order of ZIP file entries), and defines a new file extension for OME-Zarr zip files.
+The RFC proposes to require the ZIP archive root to match the OME-Zarr root, prohibits ZIP-level compression, nested or multi-part ZIP archives and ZIP encryption, recommends performance optimizations (use of sharding codec, order of ZIP file entries), and defines a new file extension for OME-Zarr zip files.
 
 ## Background
 
@@ -169,7 +169,7 @@ In particular this prohibits "recursive zipping", the embedding of an OME-Zarr z
 
 Furthermore, this RFC prohibits splitting up the ZIP archive into multiple files ("multi-volume archives"), in favor of directory-backed OME-Zarr and Zarr's sharding codec.
 
-Likewise, this RFC prohibits encryption at the ZIP archive level, since readers are not expected to handle passwords or decryption and an encrypted archive could not be opened by generic OME-Zarr tooling.
+Likewise, this RFC prohibits encryption of ZIP entries and of the central directory, since readers are not expected to handle passwords or decryption and an encrypted file could not be opened by generic OME-Zarr tooling.
 Encryption at the codec level may be applicable to Zarr in general, but is out of scope for this RFC.
 
 #### Access and mutability
@@ -177,10 +177,11 @@ Encryption at the codec level may be applicable to Zarr in general, but is out o
 Streaming an OME-Zarr zip file from beginning to end is not a goal of this RFC.
 As with the rest of Zarr, remote access is intended to use range-read requests, which are available from standard HTTP servers and object storage services such as S3.
 Client software is expected to retrieve the central directory, located near the end of the archive, without reading the entire archive, and then read the individual entries it needs.
+Recovery of corrupted or partially transferred archives is not a goal of this RFC.
 
 Some mutability of OME-Zarr zip files is expected.
 Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
-The central directory may contain records with the same name transiently while an archive is being appended to; writers SHOULD remove such duplicates from the central directory at the end of a writing session.
+The central directory may contain records with the same name transiently while an archive is being appended to; writers SHOULD remove such duplicates from the central directory at the end of a writing session. If several central directory records have the same name, readers MUST use the last one.
 Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
 Mutation is, however, not efficient for every workload (see _Drawbacks, risks, alternatives, and unknowns_ below).
 For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
@@ -208,22 +209,15 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 2. The root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy. The ZIP file MUST contain the OME-Zarr's root-level `zarr.json`.
 3. OME-Zarr zip files MUST NOT be embedded in a parent OME-Zarr hierarchy (as a sub-hierarchy or otherwise).
 4. OME-Zarr zip files MUST NOT be split into multiple parts.
-5. OME-Zarr zip files MUST NOT use ZIP archive-level encryption.
+5. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory.
 6. ZIP-level compression MUST NOT be used: all ZIP entries MUST use the STORE method. Compression is expected to be performed by Zarr-level codecs.
-7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) other than the following standard metadata fields:
-   - ZIP64 extended information (header ID `0x0001`),
-   - Extended timestamp (header ID `0x5455`),
-   - Info-ZIP New Unix (header ID `0x7875`).
-
-   This list may be extended in future versions of this specification.
+7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) that change how the bytes of the entry are to be interpreted, e.g. fields that signal encryption or an alternative compression or encoding of the entry data. Other extra fields, such as the ZIP64 extended information or timestamps, are allowed; readers skip extra fields they do not understand.
 8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
-9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy. Readers MUST use the central directory to locate entries; entries not listed in the central directory are not part of the OME-Zarr hierarchy.
+9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy. Readers MUST use the central directory to locate entries; entries not listed in the central directory are not part of the OME-Zarr hierarchy. If several central directory records have the same name, readers MUST use the last one.
 
 OME-Zarr zip files MAY contain directory entries, i.e. zero-length entries whose names end with `/`.
 Directory entries are not Zarr keys and SHOULD be ignored by readers.
 Directory entries are ignored by the `jsonFirst` parameter described below: they may appear anywhere in the central directory, including before the `zarr.json` records.
-
-A validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements above.
 
 When creating OME-Zarr zip files, the following are RECOMMENDED. They are intended to ensure that reading OME-Zarr zip files is similarly performant as reading from other storage formats (see the _Performance_ section):
 
@@ -233,6 +227,7 @@ When creating OME-Zarr zip files, the following are RECOMMENDED. They are intend
 4. All `zarr.json` records SHOULD precede all other records in the central directory, not counting directory entries. In this case, the `jsonFirst` parameter of the archive comment SHOULD be set to `true` (see below). Within the `zarr.json` records, the root-level `zarr.json` SHOULD come first and the other `zarr.json` records SHOULD follow in breadth-first order. The order in which the entries themselves are stored in the archive is not restricted.
 5. The name of OME-Zarr zip files SHOULD end with `.ozx`.
 6. The ZIP archive comment SHOULD contain an UTF-8-encoded JSON string with an `ome` attribute that holds a `version` key with the OME-Zarr version as string value, such that `{"ome": { "version": "XX.YY" }}` is the minimum recommended content. Additional optional content is described in the next section.
+7. Writers SHOULD remove central directory records with duplicate names at the end of a writing session, so that each name occurs only once.
 
 #### OME-Zarr Zip Comment Structure
 
@@ -363,7 +358,7 @@ Drawbacks:
   - **File content is not necessarily page-aligned**.
     Compared to a directory store, the content of a file within a ZIP archive does not generally start at a page boundary of the storage device.
     Implementers using unbuffered, page-aligned I/O reported a significant performance impact for both reading and writing, due to read-modify-write cycles.
-    This can be avoided by allocating a separate page for each local file header, including for chunks inside shards and the shard index, and leaving partially filled pages empty.
+    This can be avoided by allocating a separate page for each local file header, i.e. for each entry such as a shard or an unsharded chunk, and leaving partially filled pages empty.
     This comes at the cost of additional space, which is acceptable when sharding is used and chunks are not very small.
   - **Individual file headers may describe obsolete files**.
     While the central directory contains the canonical list of files near the end of a zip archive, obsolete files and their file headers may still be present earlier in the archive.
