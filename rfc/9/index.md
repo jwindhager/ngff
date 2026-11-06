@@ -266,7 +266,7 @@ The zip comment is encoded as JSON so that future versions of the OME-Zarr speci
 The keys under the top-level `ome` attribute are strictly defined by this specification and are extended only by future versions of the specification.
 This specification governs only the keys under `ome`, and readers MUST understand all keys under `ome`.
 Other top-level keys of the JSON object are not governed by this specification; they are permitted and are meant to allow composition with other specifications.
-Other specifications and conventions, for example a future Zarr convention for thumbnails, can compose with OME-Zarr zip files in two ways: through metadata inside the Zarr hierarchy, which is part of the contents of the OME-Zarr and is stored like any other entry, and through a top-level key of their own in the archive comment, next to `ome`.
+Other specifications and conventions, for example the [Zarr convention for thumbnails](https://github.com/clbarnes/zarr-convention-thumbnails), can compose with OME-Zarr zip files in two ways: through metadata inside the Zarr hierarchy, which is part of the contents of the OME-Zarr and is stored like any other entry (as the thumbnails convention does), and through a top-level key of their own in the archive comment, next to `ome`.
 Readers that do not understand such a key are expected to ignore it.
 
 The `ome` attribute in the zip archive comment MAY contain a `zipFile` attribute, which in turn MAY contain a `centralDirectory` attribute. The `centralDirectory` attribute provides metadata about the central directory's structure and content.
