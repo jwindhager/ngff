@@ -421,7 +421,7 @@ Splitting remains a possible future extension; see the _Future possibilities_ se
 
 > Applications might benefit from pre-rendered thumbnails. [...] it might be a question if this should be a topic to be addressed by zipped OME-Zarr separately or if this is out of scope for this RFC.
 
-We consider this out of scope for this RFC. Thumbnails apply to Zarr in general and are probably best addressed by a Zarr convention for thumbnails, which we have added to the _Future possibilities_ section.
+We consider this out of scope for this RFC. Thumbnails apply to Zarr in general and are addressed by a [Zarr convention for thumbnails](https://github.com/clbarnes/zarr-convention-thumbnails), which has been proposed. The implementation of thumbnails and the integration of the convention into OME-Zarr are out of scope for this RFC; the latter is listed in the _Future possibilities_ section.
 We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome`, which readers that do not understand it are expected to ignore.
 The Open Packaging Conventions mentioned in the comment store thumbnails as separate parts of the package; OME-Zarr zip files may likewise contain entries that are not Zarr keys, since Zarr itself does not prohibit them (see the RFC).
 This specification governs only the keys under `ome` in the archive comment, all of which readers must understand; other top-level keys are not governed by it and are meant for composition.
