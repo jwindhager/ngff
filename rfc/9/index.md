@@ -52,7 +52,7 @@ The goal of this RFC is to standardize the storage of OME-Zarr hierarchies withi
 
 Specifically, this RFC aims to:
 
-- **Improve user experience** by enabling the use of OME-Zarr in conventional file-based workflows, where reasonably small images stored on local desktop file systems are prevalent.
+- **Improve user experience** by enabling the use of OME-Zarr in file-centric workflows, where reasonably small images stored on local desktop file systems are prevalent.
   This aims to ensure that a broad audience can benefit from existing and future features specific to OME-Zarr.
 - **Simplify tool development** by offering a single-file storage for OME-Zarr that developers can easily integrate into file-centric applications.
   This aims to facilitate a broad adoption of OME-Zarr, even in tools that are not specifically made for large bioimaging datasets stored in the cloud.
@@ -65,16 +65,16 @@ The RFC proposes to require the ZIP archive root to match the OME-Zarr root, pro
 
 OME-Zarr excels at storing large bioimaging datasets (often consisting of multiple images) in the cloud.
 This is primarily achieved by storing individual image chunks as separate objects (object storage) or files on the file system (`DirectoryStore` implementation in Zarr v2, [file system store](https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/index.html) specification in Zarr v3).
-However, for conventional use cases (e.g. reasonably small images stored on the local desktop file system), splitting a single image across multiple (few or many) files presents the following challenges:
+However, in file-centric workflows (e.g. with reasonably small images stored on the local desktop file system), splitting a single image across multiple (few or many) files presents the following challenges:
 
 **User experience-related challenges**:
 Many tools in the bioimaging domain operate on individual files as independent entities (e.g. images).
 For example, the "File open" dialog in ImageJ/Fiji lets users open single files as images.
 Similarly, some operating systems expect an image to be stored in a single file, as apparent by e.g. file permission systems, file type concepts (e.g. file name extensions) and file type-dependent functionality (e.g., double/right-click, drag-and-drop, preview).
 OME-Zarr, on the other hand, does not currently specify how to store data in a single file, but primarily relies on files distributed throughout nested directory structures.
-As a consequence, the user experience of interacting with OME-Zarr data in conventional use cases lags behind "traditional" file formats such as (OME-)TIFF.
+As a consequence, the user experience of interacting with OME-Zarr data in such workflows lags behind "traditional" file formats such as (OME-)TIFF.
 For example, users currently cannot associate an OME-Zarr file type with their favorite image viewer (no "double click" functionality), cannot effortlessly use their OME-Zarr images with existing file-centric tooling, nor can they easily share a few small OME-Zarr images with collaborators via file-oriented protocols (e.g. email attachments).
-OME-Zarr's lack of support for file-centric workflows hampers its adoption in conventional use cases (and in turn the motivation for tool developers to support OME-Zarr).
+OME-Zarr's lack of support for file-centric workflows hampers its adoption in these workflows (and in turn the motivation for tool developers to support OME-Zarr).
 
 **Challenges in tool development**:
 Unlike most existing single-file formats, OME-Zarr organizes image data in hierarchical directory structures.
@@ -92,11 +92,11 @@ In either case, the associated technical complexity may discourage tool develope
 Taken together, these challenges unnecessarily differentiate OME-Zarr from other formats in use cases where single files may be appropriate.
 Consequently, users and implementers have already begun to store OME-Zarr hierarchies in ZIP archives (see _Prior art and references_ section).
 Because storage of OME-Zarr images in ZIP archives is not standardized, it is difficult to implement efficient storage and access patterns.
-This can lead to format incompatibilities that may not only affect the adoption of OME-Zarr in conventional use cases, but may undermine the standardization goals of the OME-NGFF community as a whole.
+This can lead to format incompatibilities that may not only affect the adoption of OME-Zarr in single-file use cases, but may undermine the standardization goals of the OME-NGFF community as a whole.
 
 ## Proposal
 
-To improve user experience with OME-Zarr in conventional use cases, standardize the storage of OME-Zarr hierarchies within ZIP archives.
+To improve user experience with OME-Zarr in file-centric workflows (see _Intended use cases and limitations_ below), standardize the storage of OME-Zarr hierarchies within ZIP archives.
 
 Specifically:
 
@@ -107,6 +107,18 @@ Specifically:
 - Define an OME-Zarr-specific file extension for OME-Zarr zip files: `.ozx`.
 
 To minimize implementation effort and maximize compatibility, this RFC proposes a concrete archive file format as a single-file OME-Zarr storage container.
+
+### Design goals and non-goals
+
+The single-file format is designed for the following goals and non-goals, against which the choice of ZIP (see below) and the alternatives (see _Drawbacks, risks, alternatives, and unknowns_) are weighed:
+
+- **Random access through an index (goal).** Readers can locate `zarr.json` files and individual chunks or shards without reading or scanning the entire file, both on local file systems and on remote storage using range requests. In ZIP files, the central directory provides this index.
+- **Low implementation effort across languages (goal).** Support can be added to existing and new tools in many programming languages with little effort, ideally by building on existing libraries.
+- **Limited mutability (goal).** Appending to a file and limited in-place updates are possible; many concurrent writers and frequent modification are not supported (see _Access and mutability_).
+- **No fixed size limit.** The size of a file is bounded by the format in principle and by file system, object store and transfer limits in practice (see _Drawbacks, risks, alternatives, and unknowns_).
+- **Streaming (non-goal).** Reading a file sequentially from beginning to end, without first reading the index at its end, is not a goal (see _Access and mutability_).
+- **Recovery (non-goal).** No mechanism for recovering corrupted or partially transferred files is specified (see _Access and mutability_).
+- **Encryption (excluded).** Encryption of ZIP entries or of the central directory is prohibited (see _Specification_).
 
 ### The choice of ZIP
 The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage.
@@ -176,6 +188,11 @@ Furthermore, this RFC prohibits splitting up the ZIP archive into multiple files
 Likewise, this RFC prohibits encryption of ZIP entries and of the central directory, since readers are not expected to handle passwords or decryption and an encrypted file could not be opened by generic OME-Zarr tooling.
 Encryption at the codec level may be applicable to Zarr in general, but is out of scope for this RFC.
 
+Finally, this RFC also defines a new file extension to be used specifically with OME-Zarr zip files.
+This should enable file type detection (in absence of a magic number), improve user experience (e.g. by enabling file type association), avoid "accidental" in-place extraction (e.g. using on-board tooling of some operating systems) and encourage the use of OME-Zarr-specific tooling for creating OME-Zarr zip files (to follow the recommendations listed earlier).
+
+Note that this RFC does not - semantically or otherwise - restrict the data content of OME-Zarr hierarchies to be stored in OME-Zarr zip files.
+
 #### Access and mutability
 
 Streaming an OME-Zarr zip file from beginning to end is not a goal of this RFC.
@@ -184,7 +201,7 @@ Client software is expected to retrieve the central directory, located near the 
 Recovery of corrupted or partially transferred archives is not a goal of this RFC.
 
 Some mutability of OME-Zarr zip files is expected.
-Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
+Files can be appended to the archive, file contents can be modified in place (although this is generally not supported by ZIP libraries, see _Drawbacks, risks, alternatives, and unknowns_ below), and the central directory can be rewritten to omit obsolete data or files.
 The central directory may contain records with the same name transiently while an archive is being appended to; writers SHOULD remove such duplicates from the central directory at the end of a writing session. If several central directory records have the same name, readers MUST use the last one.
 Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
 Extra fields that do not change how the bytes of an entry are to be interpreted are permitted (see requirement 7 in the _Specification_ section), including alignment and padding extra fields that can reserve space for in-place updates.
@@ -194,11 +211,6 @@ Mutation is, however, not efficient for every workload: modified or removed entr
 For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
 An unzipped OME-Zarr may provide better write performance, especially when writes are parallelized.
 The recommendations of this RFC allow for some updates of the data in an OME-Zarr zip file while acknowledging this limitation.
-
-Finally, this RFC also defines a new file extension to be used specifically with OME-Zarr zip files.
-This should enable file type detection (in absence of a magic number), improve user experience (e.g. by enabling file type association), avoid "accidental" in-place extraction (e.g. using on-board tooling of some operating systems) and encourage the use of OME-Zarr-specific tooling for creating OME-Zarr zip files (to follow the recommendations listed earlier).
-
-Note that this RFC does not - semantically or otherwise - restrict the data content of OME-Zarr hierarchies to be stored in OME-Zarr zip files.
 
 ### Intended use cases and limitations
 
@@ -330,8 +342,8 @@ interpreted as described in [IETF RFC 2119](https://tools.ietf.org/html/rfc2119)
 
 In principle:
 
-- People who work in conventional settings (e.g. reasonably small images stored on the local file system) and want to use OME-Zarr
-- Developers who want to make their new or existing tools available to both conventional use cases and use cases poised for OME-Zarr
+- People who work with images as individual files (e.g. reasonably small images stored on the local file system) and want to use OME-Zarr
+- Developers who want to make their new or existing tools available to both file-centric workflows and use cases poised for OME-Zarr
 - Anyone benefitting from further file format standardization/OME-Zarr adoption within the bioimaging community
 
 The storage of single images as single-file (e.g. zipped) OME-Zarrs has been frequently requested in online forums, community calls, events, GitHub issues, etc.
@@ -390,7 +402,7 @@ Drawbacks:
   - **The zip file central directory is a flat, non-hierarchical list near the end of the file**.
     While zip files contain a compact central directory that other archive file formats lack, the directory is a simple list occurring in no particular order.
     This specification exploits the lack of order to list the zarr.json files first, consolidating the metadata while outlining the Zarr hierarchy.
-    Implementations may need to parse the directory into a hash table structure or sort the directory to facilitate locating files efficiently.
+    Implementations may need to parse the directory into a hash table structure or sort the directory to facilitate locating files efficiently (see _Performance_ for the logic readers are expected to implement).
   - **A large number of entries may make the central directory difficult to parse or search directly**.
     The time complexity of the reading the directory is `O(N)` where `N` is the number of all files in the archive.
     A single array containing a large number of chunks in individual files may adversely affect the ability to locate chunks in other arrays contained within the archive.
@@ -548,6 +560,15 @@ The authors measured the cost of the central directory on synthetic archives wit
 its size and parsing time grow linearly with the number of entries (about 59 MB and 0.6 s at one million entries), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in a time independent of the number of entries.
 For comparison, the central directory of the example dataset `6001240.ozx` (see _Implementation_) has 108 records in 6,154 bytes, of which the 4 leading `zarr.json` records take 226 bytes.
 The synthetic measurements are local and do not include network latency; the latency of random-access chunk reads compared to an unzipped OME-Zarr has not been measured.
+
+To achieve this performance, readers are expected to:
+
+1. Read the end of the file, which holds the end of central directory record, the ZIP64 end of central directory records and the archive comment, with a single range request of a fixed size (e.g. the last 64 KiB plus a few hundred bytes, which covers the largest possible archive comment), and then the central directory itself, if it was not already included in that request.
+2. Parse the central directory once into an index, such as a hash table from entry name to offset and size, so that subsequent lookups take constant time regardless of the number of entries. If `jsonFirst` is `true` and only the structure of the hierarchy is needed, parsing can stop at the first record that is neither a `zarr.json` nor a directory entry.
+3. Read each requested entry with a range request starting at the offset of its local file header. The length of the local file header is not recorded in the central directory, because its extra field may differ from the one in the central directory record; readers can either read the fixed-size part of the local file header (30 bytes) first, or request a small margin in addition to the entry data and locate the data from the header.
+
+A purpose-built format with an index at the beginning of the file, as discussed under the alternatives, would save the request for the end of the file and, if its index were laid out for direct lookup, the one-time parse of the index.
+The cost of reading an individual chunk or shard after the index has been read would be the same, and with the sharding codec the one-time parse of the central directory is small (see above).
 
 ## Compatibility
 

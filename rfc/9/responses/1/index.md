@@ -172,12 +172,13 @@ To be clear about what this RFC defines: it is a file format.
 An OME-Zarr zip file (`.ozx`) is a valid ZIP file whose unzipped contents are a valid OME-Zarr hierarchy, restricted by a small set of MUST requirements and a set of recommendations that allow for performance and future parameterization via the archive comment.
 It is a conservative subset of all possible "Zarr in a ZIP file" layouts, and therefore its own format; we have added a section to the RFC that says so.
 
-#### Requirements: streaming, mutability, encryption, recovery
+#### Requirements should be stated more clearly
 
 > The proposal should articulate the technical requirements of a single-file OME-Zarr format more thoroughly.
 
 Thank you; we agree.
-We have added an _Access and mutability_ subsection to the Proposal section and a requirement on encryption to the Specification section.
+We have added a _Design goals and non-goals_ subsection to the Proposal section, which lists the requirements in one place and against which the choice of ZIP and the alternatives are weighed, an _Access and mutability_ subsection with the details on streaming, mutability and recovery, a section on _Intended use cases and limitations_, and a requirement on encryption to the Specification section.
+The answers to the individual points follow.
 
 ##### Streaming
 
@@ -194,9 +195,13 @@ Regarding the question on `jsonFirst`: it does not make offsets of all chunks av
 
 > Are the contents of a zipped OME-Zarr file intended to be mutable?
 
-Some mutability is expected: the archive can be appended to, files can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
+Some mutability is expected: the archive can be appended to, files can be modified in place (although ZIP libraries generally do not support this), and the central directory can be rewritten to omit obsolete data or files.
 Comment 5 recommends treating OME-Zarr zip files as read-only after the initial write and rewriting the whole file for any modification. We have not adopted this recommendation, because the recommendations of the RFC (ZIP64, writing the central directory at the end of a writing session, removing duplicate records) set up the archive to allow for some updates of the data (see the response to comment 5 below).
-We agree with the reviewer's observation that mutation has costs (a rewritten central directory, orphaned entries, and a possibly spoiled "`zarr.json` first" ordering, see the _Drawbacks_ section), and we have not made mitigations such as padding a requirement, in order to keep the format compatible with general-purpose ZIP libraries; padding by means of alignment and padding extra fields, or by reserving unused space between entries, is permitted.
+We agree with the reviewer's observation that mutation has costs: a rewritten central directory, and obsolete entries left behind in the archive (see the _Drawbacks_ section).
+The "`zarr.json` first" recommendation, however, now concerns only the order of the records in the central directory, not the order of the entries in the archive (see the response to comment 4 below).
+Since the central directory is rewritten whenever the archive is modified, a writer that appends a new version of a `zarr.json` to the end of the archive can still put its record among the leading `zarr.json` records of the central directory at the end of the writing session, so the ordering, and with it `jsonFirst`, is not spoiled.
+A writer that does not do this is asked to set `jsonFirst` to `false` or omit it, so that the archive comment stays consistent with the central directory (see the description of `jsonFirst` in the RFC).
+We have not made mitigations such as padding a requirement or specified them, in order to keep the format compatible with general-purpose ZIP libraries; padding by means of alignment and padding extra fields, or by reserving unused space between entries, is permitted.
 For massively parallel changes, it is expected that the Zarr arrays are extracted, modified, and then repacked.
 We have stated this in the RFC.
 
@@ -224,11 +229,30 @@ Recovery is not a goal of this RFC, and we do not specify additional recovery me
 Yes: we expect reading OME-Zarr zip files to be comparable to reading other Zarr stores when readers use range requests and the recommendations are followed.
 We have rewritten the _Performance_ section of the RFC to summarize the most relevant findings of the existing external evaluations (see also the response to comment 5 below), and to state this expectation.
 We have measured central directory costs on synthetic archives (scripts in [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples)): parsing time and central directory size grow linearly with the number of entries (about 0.6 s and 59 MB at one million entries with a minimal parser), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in time independent of the number of entries. These measurements are local and do not include network latency, and the latency of random-access chunk reads compared to an unzipped store has not been measured. We have summarized these results in the _Performance_ section of the RFC.
-The _Drawbacks_ section already describes the logic that readers may need to optimize lookups (parsing the central directory into a hash table or sorting it).
+
+> What logic is necessary in zipped OME-Zarr readers to optimize random-access read performance? [...] how would that logic be simpler/different with other non-ZIP formats, especially ones tailored more toward performance concerns?
+
+We have added this logic to the _Performance_ section of the RFC.
+Readers are expected to read the end of the file (the end of central directory records and the archive comment) with one range request of a fixed size, parse the central directory once into an index such as a hash table, so that later lookups take constant time, optionally stop early when `jsonFirst` is `true` and only the structure is needed, and then read each entry with one range request starting at its local file header.
+A purpose-built format with an index at the beginning of the file would save the request for the end of the file and, if its index were laid out for direct lookup, the one-time parse of the index; the cost of reading an individual chunk or shard once the index is known would be the same.
+With the sharding codec, the one-time parse is small (see the measurements above).
+
+##### File size limits
+
+> State requirements for streaming (yes/no), mutability (read-only vs. appendable), and acceptable file size limits.
+
+We do not set a fixed size limit.
+The hard bound is given by the 64-bit size limits of ZIP64, which are far beyond practical sizes; in practice, very large single files are limited by file system and object store limits and by the cost of transferring or copying them.
+We have added this as a drawback, together with the guidance that a directory-backed or object store-backed OME-Zarr remains an option for very large datasets, and listed it among the design goals and non-goals.
+See also the response to review 2 on recommendations on maximum archive size.
 
 ##### Use cases
 
-This is addressed in the response to comment 3 (see the corresponding section of this document).
+> The phrase "conventional use cases" is frequently used, but not fully defined. [...] But a clear bullet-list of community-gathered use cases would be clarifying.
+
+We have dropped the phrase "conventional use cases" from the RFC and instead refer to file-centric workflows, which the _Background_ section describes.
+We have also added a section on _Intended use cases and limitations_, which lists the intended use cases and what OME-Zarr zip files are not intended for, together with current demonstrations of each use case.
+They are based on the motivation of this RFC (see _Background_) and on use cases reported in the discussion of this RFC, in the reviews and in the comments; see the response to comment 3 for details.
 
 #### Generalizing `jsonFirst`
 
