@@ -188,7 +188,7 @@ We have gone through the suggested list item by item:
 - **Self-extracting ZIP code:** adopted in a general form. OME-Zarr zip files MUST NOT contain any data before the first local file header, which prohibits self-extracting archives and other prepended stubs. This may be revisited in a future version of the specification.
 - **Mutation:** permitted, with the caveats described in the _Access and mutability_ subsection of the RFC (see also the response above).
 
-Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable. We have added a requirement that a validator for OME-Zarr zip files MUST report a violation of any of the MUST or MUST NOT requirements. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
+Regarding "Validators MUST reject ozx files violating these constraints": we agree that the MUST requirements need to be testable and have written them with that in mind. We have not added a requirement on validators themselves, since conformance of files is already defined by the MUST and MUST NOT requirements, and requirements on validators are an implementation detail that the RFC does not otherwise define. Requirement 7 is testable in part: the lists of compliant and non-compliant extra fields above can serve as the basis for a test. [ozx-tck](https://github.com/clbarnes/ozx-tck) is intended for this purpose.
 
 ## Comment 1
 
