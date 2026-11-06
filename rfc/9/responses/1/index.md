@@ -12,7 +12,7 @@ authors:
 date: "2026-11-01"
 ---
 
-# RFC-9: Response 1
+# RFC-9: Response 1 (2025-12-11 version)
 
 (rfcs:rfc9:response1)=
 
@@ -55,7 +55,7 @@ The second matters for entries such as shards, which can be large and whose fina
 Using the extra fields for all entries adds tens of bytes per entry: in the libraries we tested, 20 bytes per local file header and up to about 32 further bytes per central directory record.
 We consider this worthwhile relative to the gigabyte to terabyte scale at which OME-Zarr datasets are expected to grow; for example, a 1 TB dataset stored as about 1,000 shards of 1 GB carries well under 100 kB of such overhead.
 
-We agree that guidance for common languages is needed, and will include library-specific notes for writing ZIP64 in the implementation guidance of the RFC.
+We agree that guidance for common languages is needed, and have written library-specific notes for writing ZIP64 as part of the implementation guidance that accompanies the RFC ([`library-notes.md`](https://github.com/jwindhager/ngff-rfc9-examples/blob/main/library-notes.md) in the [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples) repository).
 Libraries differ in which of these pieces they can write: for example, of the libraries we tested, Python's `zipfile` can write the extra fields in the local headers but not the end records for small archives, while the JDK's zip file system can write the end records (through an undocumented property) but not the extra fields.
 We have therefore kept this as a SHOULD instead of downgrading it to a MAY, and have expanded the corresponding text in the _Proposal_ section to state what is required by the ZIP format itself, what we recommend, and why it is not a requirement.
 
@@ -79,6 +79,20 @@ Response to [review 2](https://ngff.openmicroscopy.org/rfc/9/reviews/2/index.htm
 
 Agreed. We have added the following sentence to the Compatibility section: "This RFC applies only to OME-Zarr v0.5 and later, which depend on Zarr version 3." Since Zarr version 3 stores metadata in `zarr.json`, hierarchies with `.zattrs`/`.zarray` metadata (OME-Zarr v0.4 and earlier) are not covered.
 
+#### Recommendations on maximum archive size
+
+> However, no explicit guidance is given on size limitations associated with the single file format. Presumably the upper limit of size of a single file on filesystems is a hard limit, but there are practical limitations to the storage and transfer of extremely large files below the filesystem-imposed limit. Since the RFC explicitly prohibits multi-part archives, it would be useful to include a brief discussion of the limitations this imposes, and guidance for users with OME-Zarrs above this size.
+
+Thank you; we agree that this deserves discussion.
+We do not give a fixed maximum size, because the practical limit depends on the file system, the object store and the way the file is transferred, and changes over time.
+The hard bound is given by the 64-bit size limits of ZIP64, which are far beyond practical sizes.
+In practice, very large single files are limited by file system and object store limits (for example the maximum size of a single object) and by the cost of transferring or copying one very large file, e.g. when a transfer has to be restarted.
+We have added this as a drawback ("The size of a single file is bounded"), together with the guidance that a directory-backed or object store-backed OME-Zarr remains an option for very large datasets.
+
+The review also points out a tension between the motivation of the RFC, which emphasizes sharing "a few small" images (_Background_), and the use of OME-Zarr zip files for transport and archival of large datasets (_Intended use cases and limitations_).
+The motivation describes the use case that is served worst by directory-backed OME-Zarr today, but the format does not restrict the size of the hierarchy: terabyte-scale Zarr hierarchies are already distributed as single archives for transport and archival.
+Whether a single file is appropriate for a given dataset is a practical decision for which the drawback above gives guidance.
+
 ### Minor comments and questions
 
 > The specification section has the line "Amend the specification with the following section:" Is this a reference to the section that immediately follows?
@@ -96,7 +110,7 @@ Agreed; the sentence is now a separate paragraph after the list of drawbacks.
 > Is the limitation (imposed by enforcing single-file archival) of the total size of an OME-Zarr image that can be represented as a single file this way a Drawback?
 
 Yes, in practice: the limits of ZIP64 are far beyond practical sizes, but very large single files are difficult to handle (file system and object store limits, transfer and copy costs).
-We have added this to the drawbacks, noting that directory-backed or object store-backed OME-Zarr remains an option for very large datasets.
+We have added this to the drawbacks, noting that directory-backed or object store-backed OME-Zarr remains an option for very large datasets (see the response on recommendations on maximum archive size above).
 
 > Compatibility: Is it fully compatible with zarr < 0.5?
 
@@ -182,7 +196,7 @@ Regarding the question on `jsonFirst`: it does not make offsets of all chunks av
 
 Some mutability is expected: the archive can be appended to, files can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
 Comment 5 recommends treating OME-Zarr zip files as read-only after the initial write and rewriting the whole file for any modification. We have not adopted this recommendation, because the recommendations of the RFC (ZIP64, writing the central directory at the end of a writing session, removing duplicate records) set up the archive to allow for some updates of the data (see the response to comment 5 below).
-We agree with the reviewer's observation that mutation has costs (a rewritten central directory, orphaned entries, and a possibly spoiled "`zarr.json` first" ordering, see the _Drawbacks_ section), and we have not adopted mitigations such as a padded header, in order to keep the format compatible with general-purpose ZIP libraries.
+We agree with the reviewer's observation that mutation has costs (a rewritten central directory, orphaned entries, and a possibly spoiled "`zarr.json` first" ordering, see the _Drawbacks_ section), and we have not made mitigations such as padding a requirement, in order to keep the format compatible with general-purpose ZIP libraries; padding by means of alignment and padding extra fields, or by reserving unused space between entries, is permitted.
 For massively parallel changes, it is expected that the Zarr arrays are extracted, modified, and then repacked.
 We have stated this in the RFC.
 
@@ -209,7 +223,7 @@ Recovery is not a goal of this RFC, and we do not specify additional recovery me
 
 Yes: we expect reading OME-Zarr zip files to be comparable to reading other Zarr stores when readers use range requests and the recommendations are followed.
 We have rewritten the _Performance_ section of the RFC to summarize the most relevant findings of the existing external evaluations (see also the response to comment 5 below), and to state this expectation.
-We have measured central directory costs on synthetic archives (scripts in [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples)): parsing time and central directory size grow linearly with the number of entries (about 0.6 s and 59 MB at one million entries with a minimal parser), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in time independent of the number of entries. These measurements are local and do not include network latency. [Open: summarize these results in the RFC; random-access chunk read latency compared to an unzipped store has not been measured.]
+We have measured central directory costs on synthetic archives (scripts in [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples)): parsing time and central directory size grow linearly with the number of entries (about 0.6 s and 59 MB at one million entries with a minimal parser), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in time independent of the number of entries. These measurements are local and do not include network latency, and the latency of random-access chunk reads compared to an unzipped store has not been measured. We have summarized these results in the _Performance_ section of the RFC.
 The _Drawbacks_ section already describes the logic that readers may need to optimize lookups (parsing the central directory into a hash table or sorting it).
 
 ##### Use cases
@@ -224,7 +238,15 @@ This is addressed in the response to comment 3 (see the corresponding section of
 This is exactly the property a reader needs in order to stop parsing the central directory early and still know that the structure of the hierarchy is complete; it does not depend on any particular order among the `zarr.json` records.
 A separate flag for breadth-first ordering was proposed during the drafting of the RFC and later removed for this reason.
 We have clarified this in the RFC (including that `jsonFirst` does not assert breadth-first order), and we have added an example.
-Since the keys under `ome` are strictly defined by the specification and are extended by future versions of it, an additional parameter describing the order of the `zarr.json` records can be added later should a use case arise.
+
+> It would be helpful for the proposal to give an example of central directory size vs zarr.json size, to give a sense of performance gains here.
+> - For the example ozx file?
+> - For a larger file, e.g. tubhiswt.ome.tif converted to ozx with a reasonable sharding structure?
+
+For the example dataset [`6001240.ozx`](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx), the central directory has 108 records in 6,154 bytes; the 4 `zarr.json` records come first and take 226 bytes. This dataset is too small for `jsonFirst` to make a noticeable difference, and its archive comment (`{"ome": {"version": "0.5"}}`) does not set it.
+The gain grows with the number of entries: on synthetic archives, the size of the central directory grows linearly with the number of entries (about 59 MB at one million entries, parsed in about 0.6 s with a minimal parser), whereas with `jsonFirst` a reader only needs the leading `zarr.json` records, whose size depends on the number of groups and arrays but not on the number of chunks or shards (see the response on performance above and the _Performance_ section of the RFC).
+We have not converted a larger, realistically sharded dataset for this response.
+Since the keys under `ome` are strictly defined by the specification and are extended by future versions of it, an additional parameter describing the order of the `zarr.json` records can be added later should a use case arise; readers that do not understand it are asked to ignore it.
 
 #### Explicitly constrain ZIP options
 
@@ -235,12 +257,12 @@ We have gone through the suggested list item by item:
 
 - **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory. Codec-level encryption is out of scope for this RFC.
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
-- **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents.
-- **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
-- **Extra fields containing non-Zarr data:** adopted in a refined form.
+- **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents. We considered allowing readers to process generic ZIP files that do not comply with this RFC, e.g. archives created with the default tooling of an operating system (which typically use DEFLATE and place the hierarchy in a folder) and renamed to `.ozx`, and decided against it, since the `.ozx` extension asserts compliance; readers remain free to support plain `.zip` files. We have recorded this in the _Abandoned Ideas_ section of the RFC.
+- **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC; readers SHOULD ignore keys under `ome` they do not understand, so that keys added in later versions do not break older readers. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
+- **Extra fields containing non-Zarr data:** partly adopted.
     - Most extra fields carry per-entry metadata rather than Zarr data (e.g. ZIP64 information, timestamps, Unix permissions), and a validator cannot tell what an unknown extra field contains. We therefore do not prohibit extra fields in general; readers can skip those they do not understand.
     - Instead, requirement 7 prohibits extra fields that change how the bytes of an entry are to be interpreted.
-    - Extra fields known to be compliant (header IDs from APPNOTE 6.3.10):
+    - Extra fields known to be compliant (header IDs from APPNOTE 6.3.10; these lists are also given in the _Access and mutability_ subsection of the RFC):
         - `0x0001`: ZIP64 extended information.
         - `0x000a`, `0x5455`: NTFS and extended timestamps.
         - `0x5855`, `0x7855`, `0x7875`: Info-ZIP UNIX owner and permission information.
@@ -339,17 +361,18 @@ Response to [comment 3](https://ngff.openmicroscopy.org/rfc/9/comments/3/index.h
 > it will be important for the eventual spec changes to make clear the use cases for which .ozx is and is not appropriate. e.g. as a write-once read-many format for small datasets for archival or transport purposes.
 
 We agree and have added a section on _Intended use cases and limitations_ to the RFC.
-It lists the intended use cases (file-centric desktop workflows, transport and archival, viewing and exploring remote data with range requests, and exchange between Zarr implementations), points to current demonstrations of them, and lists what OME-Zarr zip files are not intended for (many concurrent writers or frequent in-place modification, streaming, archive-level encryption, and very large numbers of entries without sharding).
+It lists the intended use cases (file-centric desktop workflows, transport and archival, viewing and exploring remote data with range requests, and exchange between Zarr implementations), points to current demonstrations of them, and lists what OME-Zarr zip files are not intended for (many concurrent writers or frequent in-place modification, streaming, encryption of ZIP entries or the central directory, and very large numbers of entries without sharding).
 The format is primarily write-once read-many, as suggested, but not exclusively: some mutability is expected (see the response to the comment on mutability above).
+Unlike the comment's example, we do not restrict the intended use to small datasets: transport and archival of large datasets as a single object is one of the intended use cases, with the practical limits of very large single files described in the _Drawbacks_ section (see also the response on maximum archive size).
 
 The demonstrations we found in the record of this RFC and elsewhere are:
 
-- the Neuroglancer view of the example dataset `6001240.ozx` (see the _Tutorials and Examples_ section);
+- the Neuroglancer and Vizarr views of the example dataset `6001240.ozx` (see the _Implementation_ and _Tutorials and Examples_ sections);
 - WEBKNOSSOS, which can read OME-Zarr zip files remotely and uploaded ones ([pull request](https://github.com/scalableminds/webknossos/pull/9738), merged);
 - Zipglancer, a web-based explorer for ZIP and OME-Zarr zip files using range requests, which provides links to 51 example OME-Zarr zip files in a public bucket (all of which pass the checks for the requirements of this RFC that `check_ozx.py` can perform on the central directory, and which all use the `jsonFirst` ordering);
 - converters and test tools: the Rust converter `ozx` and the validator `ozx-tck`.
 
-This list is not exhaustive. [Open: coordinate with the co-author assigned to the use case documentation and add any further demonstrations.]
+This list is not exhaustive. The use case that initially motivated this RFC, opening and sharing OME-Zarr images in file-centric desktop workflows, is described in the _Background_ section.
 
 #### Beyond OME-Zarr
 
@@ -379,8 +402,13 @@ Data can therefore be written first and metadata second.
 We have changed the RFC accordingly: the recommendation now concerns only the central directory, and the order of the entries themselves is not restricted.
 For writers that cannot reorder the central directory, `jsonFirst` can be set to `false` (or omitted), which is valid.
 As the comment suggests, readers may also read the archive comment and the central directory first; this remains possible.
-[Open: confirm with co-authors that the order of the entries themselves is no longer recommended.]
 Regarding duplicate `zarr.json` entries observed when appending: the RFC recommends that writers remove duplicate records from the central directory at the end of a writing session, and requires readers to use the last record if duplicates remain, as Python's `zipfile` does. A reader that relies on `jsonFirst: true` to stop reading early can still miss a later duplicate `zarr.json`; writers are therefore asked to keep the `jsonFirst` flag consistent with the central directory.
+
+> This is reasonable for discoverability, especially for the root `zarr.json` if consolidated metadata is present. For all other `zarr.json` files, and for a root `zarr.json` without consolidated metadata, this seems less relevant for us and depends on the number of file entries. Therefore in our use case we might omit it for now and introduce it later if needed.
+
+Agreed. The order of the central directory is a recommendation, and files that do not follow it remain valid; in that case `jsonFirst` is `false` or omitted.
+The order matters most for archives with many entries, where it lets readers discover all `zarr.json` records without reading the entire central directory.
+Consolidated metadata is not part of the OME-Zarr specification and is therefore not mentioned in the RFC, but the two are complementary: with the recommended order, the root-level `zarr.json`, including any consolidated metadata it holds, is the first record in the central directory.
 
 #### ZIP disadvantage in performance
 
@@ -424,7 +452,7 @@ Splitting remains a possible future extension; see the _Future possibilities_ se
 We consider this out of scope for this RFC. Thumbnails apply to Zarr in general and are addressed by a [Zarr convention for thumbnails](https://github.com/clbarnes/zarr-convention-thumbnails), which has been proposed. The implementation of thumbnails and the integration of the convention into OME-Zarr are out of scope for this RFC; the latter is listed in the _Future possibilities_ section.
 We have made explicit in the RFC how such a convention can compose with OME-Zarr zip files: through metadata inside the Zarr hierarchy, and through a top-level key of its own in the archive comment next to `ome`, which readers that do not understand it are expected to ignore.
 The Open Packaging Conventions mentioned in the comment store thumbnails as separate parts of the package; OME-Zarr zip files may likewise contain entries that are not Zarr keys, since Zarr itself does not prohibit them (see the RFC).
-This specification governs only the keys under `ome` in the archive comment, all of which readers must understand; other top-level keys are not governed by it and are meant for composition.
+This specification governs only the keys under `ome` in the archive comment; other top-level keys are not governed by it and are meant for composition.
 
 #### Recommend specific implementations
 
@@ -448,8 +476,10 @@ The _Performance_ section now summarizes the most relevant findings of the two e
 
 > "When creating OME-Zarr zip files, the following RECOMMENDATIONS ensure that reading from OME-Zarr zip files is similarly performant as reading from other storage formats:"
 
-We adopted a variant of this phrasing for the list of recommendations, stating that they are intended to ensure reading performance similar to other storage formats.
-We did not adopt the stronger formulation as a normative requirement on writers, since writers cannot fully control reader implementations; instead, the _Performance_ section advises writers to verify read performance for their data. [Open: confirm with co-authors whether to make this a SHOULD.]
+> "Writer implementations SHOULD verify that reading their OME-Zarr zip files is similarly performant as reading from other storage formats."
+
+We adopted a variant of the first phrasing for the list of recommendations, stating that they are intended to ensure reading performance similar to other storage formats.
+We did not adopt the second, stronger formulation as a normative requirement on writers, since writers cannot fully control reader implementations and such a requirement could not be tested on a file; instead, the _Performance_ section advises writers to verify read performance for their data.
 
 #### Specify possible roots
 
@@ -486,6 +516,45 @@ This typo has now been corrected.
 ## Comment 6
 
 Response to [comment 6](https://ngff.openmicroscopy.org/rfc/9/comments/6/index.html) by Assa Diabira, Institut Cochin (IMAG'IC / CID), Université Paris Cité, France.
+
+### Significant comments and questions
+
+#### Disabled ZIP compression is critical for random-access readers
+
+> From a reader's standpoint, the “disabled compression” recommendation is therefore close to a usability requirement for browser side random access rather than a minor tuning knob, and I would support stating it more strongly.
+
+Thank you for this detailed account from a browser-side reader.
+Since the version of the RFC that the comment refers to, the recommendation has become a requirement: ZIP-level compression MUST NOT be used, and all entries MUST use the STORE method (requirement 6 in the _Specification_ section).
+The reasons given in the RFC, avoiding the compression of already compressed Zarr chunks and allowing direct partial reads of the archive, match the experience described in the comment.
+
+#### Root alignment
+
+> Making root alignment a hard requirement in the RFC would allow readers to drop this detection step entirely.
+
+This is already a hard requirement: the root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy, and the root-level `zarr.json` MUST be located in the root of the archive (requirement 2 in the _Specification_ section).
+Readers of OME-Zarr zip files therefore do not need to detect the root.
+Archives in which the hierarchy is nested in a folder, e.g. because a directory was zipped with generic tooling, are not OME-Zarr zip files; readers may still support them as plain `.zip` files as an implementation choice (see the _Abandoned Ideas_ section of the RFC).
+
+#### `jsonFirst` reader fallback
+
+> One small clarification I would welcome is an explicit statement of what a reader may assume when `jsonFirst` is absent or false, presumably a fall back to a full central-directory scan.
+
+Yes. The RFC states that `jsonFirst` defaults to `false` if it is omitted, and that without `jsonFirst` set to `true`, a reader has to parse the entire central directory to be sure that the whole structure of the hierarchy has been discovered.
+A reader may therefore make no assumption about the order of the records in this case.
+
+### Minor comments and questions
+
+#### Upstream v2 tooling raises a repackaging cost for `.ozx` adoption
+
+Thank you for pointing this out.
+As stated in the _Compatibility_ section, this RFC applies only to OME-Zarr v0.5 and later, which depend on Zarr version 3 (see also the response on versions of OME-Zarr to Review 2).
+We agree that data written as OME-Zarr v0.4 has to be converted to v0.5 before it can be stored as an OME-Zarr zip file; this conversion is not specific to this RFC.
+
+#### Single-file archives usefully carry non-image members
+
+We agree that bundling tables and labels with the image is one of the benefits of a single file.
+The RFC does not restrict the contents of the OME-Zarr hierarchy that is stored, semantically or otherwise: any group or array that the OME-Zarr specification permits, such as a `tables` group written as Zarr, is stored like any other part of the hierarchy.
+In addition, OME-Zarr zip files may contain entries that are not Zarr keys, since Zarr itself does not prohibit them.
 
 ## Further feedback
 

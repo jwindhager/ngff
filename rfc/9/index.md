@@ -59,7 +59,7 @@ Specifically, this RFC aims to:
 - **Standardize existing practice** by formally specifying how to store OME-Zarr hierarchies in ZIP archives.
   This aims to facilitate interoperability among tools, to prevent suboptimal packaging of data, and to contribute to the standardization goals of the OME-NGFF community in general.
 
-The RFC proposes to require the ZIP archive root to match the OME-Zarr root, prohibits ZIP-level compression, nested or multi-part ZIP archives and ZIP encryption, recommends performance optimizations (use of sharding codec, order of ZIP file entries), and defines a new file extension for OME-Zarr zip files.
+The RFC proposes to require the ZIP archive root to match the OME-Zarr root, prohibits ZIP-level compression, nested or multi-part ZIP archives and ZIP encryption, recommends performance optimizations (use of sharding codec, order of the central directory records), and defines a new file extension for OME-Zarr zip files.
 
 ## Background
 
@@ -187,6 +187,9 @@ Some mutability of OME-Zarr zip files is expected.
 Files can be appended to the archive and file contents can be modified in-place, and the central directory can be rewritten to omit obsolete data or files.
 The central directory may contain records with the same name transiently while an archive is being appended to; writers SHOULD remove such duplicates from the central directory at the end of a writing session. If several central directory records have the same name, readers MUST use the last one.
 Recommending ZIP64 (see above) is meant to support this, since it allows an archive to keep growing beyond the limits of the classic ZIP format.
+Extra fields that do not change how the bytes of an entry are to be interpreted are permitted (see requirement 7 in the _Specification_ section), including alignment and padding extra fields that can reserve space for in-place updates.
+For example, the following extra fields (header IDs from APPNOTE 6.3.10 and common extensions) are compliant: ZIP64 extended information (`0x0001`), NTFS and extended timestamps (`0x000a`, `0x5455`), Info-ZIP UNIX owner and permission information (`0x5855`, `0x7855`, `0x7875`), alignment and padding (`0xa11e`, `0xa220`, `0xcafe`, `0xd935`), and Info-ZIP Unicode Path and Unicode Comment (`0x7075`, `0x6375`).
+The following are not compliant: the AE-x encryption structure (`0x9901`), the Strong Encryption Header (`0x0017`) and the Patch Descriptor (`0x000f`); records that carry encryption keys and certificates (`0x0019`, `0x0021`, `0x0022`, `0x0023`) accompany encryption, which is prohibited.
 Mutation is, however, not efficient for every workload: modified or removed entries leave obsolete data in the archive, and repeated modification fragments it (see _Drawbacks, risks, alternatives, and unknowns_ below).
 For massively parallel changes, it is expected that the Zarr arrays are extracted from the archive, modified, and then repacked.
 An unzipped OME-Zarr may provide better write performance, especially when writes are parallelized.
@@ -210,7 +213,7 @@ OME-Zarr zip files are not intended for, and are not appropriate for:
 
 - workloads with many concurrent writers or frequent in-place modification, for which it is expected that the Zarr arrays are extracted, modified and repacked, or that an unzipped OME-Zarr is used (see _Access and mutability_);
 - streaming from beginning to end (see _Access and mutability_);
-- archive-level encryption (see _Specification_);
+- encryption of ZIP entries or the central directory (see _Specification_);
 - very large numbers of entries without the sharding codec (see _Performance_).
 
 ## Specification
@@ -236,7 +239,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 5. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory.
 6. ZIP-level compression MUST NOT be used: all ZIP entries MUST use the STORE method. Compression is expected to be performed by Zarr-level codecs.
 7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) that change how the bytes of the entry are to be interpreted, e.g. fields that signal encryption or an alternative compression or encoding of the entry data. Other extra fields, such as the ZIP64 extended information or timestamps, are allowed; readers skip extra fields they do not understand.
-8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
+8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the file MUST start with a local file header at offset 0. This local file header need not be referenced by the central directory: after an in-place modification it may belong to an obsolete entry. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
 9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy.
 
 OME-Zarr zip files MAY contain entries that are not Zarr keys, since Zarr itself does not prohibit them.
@@ -263,7 +266,9 @@ The zip comment is intended to provide metadata pertinent to the zip file struct
 
 The zip comment is encoded as JSON so that future versions of the OME-Zarr specification can add parameters to it, enabling parameterized features beyond versioning.
 The keys under the top-level `ome` attribute are strictly defined by this specification and are extended only by future versions of the specification.
-This specification governs only the keys under `ome`, and readers MUST understand all keys under `ome`.
+This specification governs only the keys under `ome`.
+Readers SHOULD ignore keys under `ome` that they do not understand, as for other top-level keys, so that a key added by a later version of the specification does not make older readers reject an otherwise valid file.
+A future version of the specification that adds a key changing how the contents of the archive are to be interpreted needs to ensure that readers that do not understand it cannot misread the archive.
 Other top-level keys of the JSON object are not governed by this specification; they are permitted and are meant to allow composition with other specifications.
 Other specifications and conventions, for example the [Zarr convention for thumbnails](https://github.com/clbarnes/zarr-convention-thumbnails), can compose with OME-Zarr zip files in two ways: through metadata inside the Zarr hierarchy, which is part of the contents of the OME-Zarr and is stored like any other entry (as the thumbnails convention does), and through a top-level key of their own in the archive comment, next to `ome`.
 Readers that do not understand such a key are expected to ignore it.
@@ -353,6 +358,8 @@ Socialization: see Prior art and references; the draft was further discussed amo
 - A first implementation has been [prototyped](https://github.com/ome/ngff/pull/316#issuecomment-3302456557) by one of the coauthors.
 - [ozx-tck](https://github.com/clbarnes/ozx-tck) is a toolkit to validate existing .ozx files and generate valid, warning, and error test cases.
 - [ngff-zarr](https://ngff-zarr.readthedocs.io/en/latest/) is a Python-based toolkit for working with .ozx files.
+- [`check_ozx.py`](https://github.com/jwindhager/ngff-rfc9-examples) checks the MUST requirements of this RFC on a local file or a URL using range requests (see _Tutorials and Examples_).
+- A [validator](https://github.com/jwindhager/ngff-rfc9-zipped-ome-zarr/tree/main/playground/validation) based on zarr-python has been contributed by BioImaging-NL.
 
 ### Viewers
 - A [Neuroglancer view](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C907%5D%2C%22window%22:%5B0%2C1134%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%2C%22uiControlVisibility%22:%7B%7D%7D) of the [generated data](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx).
@@ -471,6 +478,10 @@ The following ideas were abandoned:
   However, this would allow for an infinite number of concrete realizations (e.g. zip, tar, ...), thereby undermining the standardization efforts of the OME-NGFF community.
 - **Specify ZIP as the one and only storage backend** for single-file OME-Zarr.
   This would unnecessarily limit the space for future innovation/specialization in the OME-Zarr specification.
+- **Allow readers to process generic ZIP files** that contain an OME-Zarr hierarchy but do not comply with this RFC, e.g. archives created with the default tooling of an operating system and renamed to `.ozx`.
+  Such archives typically use DEFLATE compression and place the OME-Zarr hierarchy in a folder at the archive root, violating requirements 6 and 2 (see _Specification_ section).
+  Since the `.ozx` extension asserts compliance with this RFC, a statement that readers MAY process non-compliant files was considered and not adopted.
+  Readers remain free to support plain `.zip` files as an implementation choice, and such archives can be converted into OME-Zarr zip files by re-storing their entries with the STORE method and moving the OME-Zarr root to the archive root.
 - **Use a file extension other than `.ozx`**.
   The following candidates were considered:
   - `.zarrx` or `.zar` - not OME-specific <!-- codespell:ignore -->
@@ -532,6 +543,11 @@ This expectation is supported by the following external evaluations, whose most 
 
 These evaluations concern geospatial raster data, not microscopy data, and were not performed by the authors of this RFC.
 Writers should verify that reading their OME-Zarr zip files is similarly performant as reading from other storage formats for their data.
+
+The authors measured the cost of the central directory on synthetic archives with a minimal parser (benchmark script in [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples)):
+its size and parsing time grow linearly with the number of entries (about 59 MB and 0.6 s at one million entries), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in a time independent of the number of entries.
+For comparison, the central directory of the example dataset `6001240.ozx` (see _Implementation_) has 108 records in 6,154 bytes, of which the 4 leading `zarr.json` records take 226 bytes.
+The synthetic measurements are local and do not include network latency; the latency of random-access chunk reads compared to an unzipped OME-Zarr has not been measured.
 
 ## Compatibility
 
