@@ -415,7 +415,7 @@ Drawbacks:
     It has also been reported that x86_64 processors provide hardware support for CRC-32C (SSE4.2) but not for the CRC-32 used by ZIP, so computing it can be comparatively slow.
   - **Updating an entry in place is generally not supported by ZIP libraries**.
     Some implementations reserve capacity (padding) for metadata so that a small update does not require appending a new copy of the entry and rewriting the central directory, similar to `tiffcomment` or `tiffset` for TIFF files.
-    Padding by means of ZIP extra fields is not permitted by this RFC (see _Specification_); reserving unused space between entries remains possible.
+    Padding can be added either by means of alignment and padding ZIP extra fields in the local file header, which are permitted by this RFC (see _Specification_), or by reserving unused space between entries.
   - **The size of a single file is bounded**, in principle by the 64-bit size limits of ZIP64 (which are far beyond practical sizes) and in practice by the handling of very large single files: file system and object store limits (for example the maximum size of a single object), and the cost of transferring or copying one very large file.
     For very large datasets, a directory-backed or object store-backed OME-Zarr remains an option.
 
