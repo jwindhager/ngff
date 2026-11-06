@@ -171,7 +171,20 @@ We have gone through the suggested list item by item:
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
 - **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents.
 - **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
-- **Extra fields containing non-Zarr data:** adopted in a refined form. ZIP extra fields do not carry Zarr data but per-entry metadata (e.g. the ZIP64 information, timestamps, Unix permissions), so we prohibit all extra fields except an enumerated set of standard metadata fields (ZIP64 extended information, extended timestamp, Info-ZIP New Unix). This lets us extend the list in future versions of the specification.
+- **Extra fields containing non-Zarr data:** adopted in a refined form.
+    - Most extra fields carry per-entry metadata rather than Zarr data (e.g. ZIP64 information, timestamps, Unix permissions), and a validator cannot tell what an unknown extra field contains. We therefore do not prohibit extra fields in general; readers can skip those they do not understand.
+    - Instead, requirement 7 prohibits extra fields that change how the bytes of an entry are to be interpreted.
+    - Extra fields known to be compliant (header IDs from APPNOTE 6.3.10):
+        - `0x0001`: ZIP64 extended information.
+        - `0x000a`, `0x5455`: NTFS and extended timestamps.
+        - `0x5855`, `0x7855`, `0x7875`: Info-ZIP UNIX owner and permission information.
+        - `0xa11e`, `0xa220`, `0xcafe`, `0xd935`: alignment and padding (Commons Compress, Microsoft Open Packaging, Java JAR, Android).
+        - `0x7075`, `0x6375`: Info-ZIP Unicode Path and Unicode Comment. They store the UTF-8 form of the file name and comment in the header, so they do not change which Zarr node an entry belongs to.
+    - Extra fields known to be non-compliant:
+        - `0x9901`: AE-x (WinZip AES) encryption structure.
+        - `0x0017`: Strong Encryption Header.
+        - `0x000f`: Patch Descriptor (the entry holds a patch against another file, not the content of a Zarr key).
+    - Records that carry encryption keys and certificates (`0x0019`, `0x0021`, `0x0022`, `0x0023`) accompany encryption, which is already prohibited.
 - **Self-extracting ZIP code:** adopted in a general form. OME-Zarr zip files MUST NOT contain any data before the first local file header, which prohibits self-extracting archives and other prepended stubs. This may be revisited in a future version of the specification.
 - **Mutation:** permitted, with the caveats described in the _Access and mutability_ subsection of the RFC (see also the response above).
 
