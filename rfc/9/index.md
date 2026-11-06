@@ -206,12 +206,7 @@ For a ZIP file to be referred to as an OME-Zarr zip file the following condition
 4. OME-Zarr zip files MUST NOT be split into multiple parts.
 5. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory.
 6. ZIP-level compression MUST NOT be used: all ZIP entries MUST use the STORE method. Compression is expected to be performed by Zarr-level codecs.
-7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) other than the following standard metadata fields:
-   - ZIP64 extended information (header ID `0x0001`),
-   - Extended timestamp (header ID `0x5455`),
-   - Info-ZIP New Unix (header ID `0x7875`).
-
-   This list may be extended in future versions of this specification.
+7. ZIP entries MUST NOT contain extra fields (in the local file header or the central directory) that change how the bytes of the entry are to be interpreted, e.g. fields that signal encryption or an alternative compression or encoding of the entry data. Other extra fields, such as the ZIP64 extended information or timestamps, are allowed; readers skip extra fields they do not understand.
 8. OME-Zarr zip files MUST NOT contain data before the first local file header, i.e. the first local file header MUST be at offset 0 of the file. In particular, this prohibits self-extracting ZIP archives and other prepended executable stubs. This may be revisited in a future version of this specification.
 9. The ZIP file MUST contain a central directory that lists all entries of the OME-Zarr hierarchy. Readers MUST use the central directory to locate entries; entries not listed in the central directory are not part of the OME-Zarr hierarchy.
 
