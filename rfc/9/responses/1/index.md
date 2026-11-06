@@ -107,7 +107,7 @@ No: see the response above ("Versions of OME Zarr"); the RFC applies only to OME
 > [Neuroglancer link] with acl to public and CORS to allow all origins works.
 
 Thank you for testing this.
-We have fixed the file hosting and added a note on the required CORS configuration to the _Tutorials and Examples_ section, and added another set of 51 example datasets, hosted in a bucket that allows cross-origin requests, to the _Implementation_ section.
+We have moved the file hosting to [IDR](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx) and added a note on the required CORS configuration to the _Tutorials and Examples_ section, and added another set of 51 example datasets, hosted in a bucket that allows cross-origin requests, to the _Implementation_ section.
 
 > Tutorials and Examples -> [...] A short worked example of how to write/construct .ozx would be valuable.
 
