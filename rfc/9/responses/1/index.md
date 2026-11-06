@@ -461,8 +461,8 @@ We compared the terms with the current OME-Zarr specification.
 "Dataset" is not better defined: in the multiscales metadata, `datasets` denotes the arrays that store the individual resolution levels, and elsewhere the word is used informally (for example "high-content screening dataset" and "scene dataset"); "fileset" is used in the specification for the layout produced by `bioformats2raw`.
 We have therefore kept "hierarchy", and the RFC now defines the term "OME-Zarr hierarchy" once, as a Zarr hierarchy whose contents conform to the OME-Zarr specification.
 
-Regarding the possible roots: this RFC does not restrict the contents of the OME-Zarr that is stored, semantically or otherwise (see the item on semantic restrictions in the _Abandoned Ideas_ section), so the root of the archive is the root of whatever OME-Zarr hierarchy the specification permits, now or in the future.
-This avoids tying the single-file format to the set of root types of a particular version of the specification, which may be extended by the collections RFC. [Open: confirm with co-authors that the possible roots are intentionally not enumerated.]
+Regarding the possible roots: this RFC defers them to the OME-Zarr specification as a whole and neither adds restrictions nor adds possibilities. It does not restrict the contents of the OME-Zarr that is stored, semantically or otherwise (see the item on semantic restrictions in the _Abandoned Ideas_ section), so the root of the archive is the root of whatever OME-Zarr hierarchy the specification permits, now or in the future.
+This avoids tying the single-file format to the set of root types of a particular version of the specification, which may be extended by the collections RFC.
 
 #### Avoid appending
 
