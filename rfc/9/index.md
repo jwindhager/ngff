@@ -112,12 +112,15 @@ To minimize implementation effort and maximize compatibility, this RFC proposes 
 
 The single-file format is designed for the following goals and non-goals, against which the choice of ZIP (see below) and the alternatives (see _Drawbacks, risks, alternatives, and unknowns_) are weighed:
 
-- **Random access through an index (goal).** Readers can locate `zarr.json` files and individual chunks or shards without reading or scanning the entire file, both on local file systems and on remote storage using range requests. In ZIP files, the central directory provides this index.
-- **Low implementation effort across languages (goal).** Support can be added to existing and new tools in many programming languages with little effort, ideally by building on existing libraries.
-- **Limited mutability (goal).** Appending to a file and limited in-place updates are possible; many concurrent writers and frequent modification are not supported (see _Access and mutability_).
+#### Goals
+- **Random access through an index.** Readers can locate `zarr.json` files and individual chunks or shards without reading or scanning the entire file, both on local file systems and on remote storage using range requests. In ZIP files, the central directory provides this index.
+- **Low implementation effort across languages.** Support can be added to existing and new tools in many programming languages with little effort, ideally by building on existing libraries.
+- **Limited mutability.** Appending to a file and limited in-place updates are possible; many concurrent writers and frequent modification are not supported (see _Access and mutability_).
 - **No fixed size limit.** The size of a file is bounded by the format in principle and by file system, object store and transfer limits in practice (see _Drawbacks, risks, alternatives, and unknowns_).
-- **Streaming (non-goal).** Reading a file sequentially from beginning to end, without first reading the index at its end, is not a goal (see _Access and mutability_).
-- **Recovery (non-goal).** No mechanism for recovering corrupted or partially transferred files is specified (see _Access and mutability_).
+
+#### Non-goals
+- **Streaming.** Reading a file sequentially from beginning to end, without first reading the index at its end, is not a goal (see _Access and mutability_).
+- **Recovery.** No mechanism for recovering corrupted or partially transferred files is specified (see _Access and mutability_).
 - **Encryption (excluded).** Encryption of ZIP entries or of the central directory is prohibited (see _Specification_).
 
 ### The choice of ZIP

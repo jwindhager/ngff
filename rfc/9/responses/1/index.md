@@ -84,7 +84,7 @@ Agreed. We have added the following sentence to the Compatibility section: "This
 > However, no explicit guidance is given on size limitations associated with the single file format. Presumably the upper limit of size of a single file on filesystems is a hard limit, but there are practical limitations to the storage and transfer of extremely large files below the filesystem-imposed limit. Since the RFC explicitly prohibits multi-part archives, it would be useful to include a brief discussion of the limitations this imposes, and guidance for users with OME-Zarrs above this size.
 
 Thank you; we agree that this deserves discussion.
-We do not give a fixed maximum size, because the practical limit depends on the file system, the object store and the way the file is transferred, and changes over time.
+We do not give a fixed maximum size, because the practical limit depends on the number of entries in a ZIP file, the file system, the object store and the way the file is transferred, and changes over time.
 The hard bound is given by the 64-bit size limits of ZIP64, which are far beyond practical sizes.
 In practice, very large single files are limited by file system and object store limits (for example the maximum size of a single object) and by the cost of transferring or copying one very large file, e.g. when a transfer has to be restarted.
 We have added this as a drawback ("The size of a single file is bounded"), together with the guidance that a directory-backed or object store-backed OME-Zarr remains an option for very large datasets.
