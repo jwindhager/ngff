@@ -562,6 +562,7 @@ Writers should verify that reading their OME-Zarr zip files is similarly perform
 The authors measured the cost of the central directory on synthetic archives with a minimal parser (benchmark script in [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples)):
 its size and parsing time grow linearly with the number of entries (about 59 MB and 0.6 s at one million entries), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in a time independent of the number of entries.
 For comparison, the central directory of the example dataset `6001240.ozx` (see _Implementation_) has 108 records in 6,154 bytes, of which the 4 leading `zarr.json` records take 226 bytes.
+For the 4D `tubhiswt` OME-TIFF sample, whose data are of the same order of magnitude (225 MB uncompressed), converted to an OME-Zarr zip file with three resolution levels, the central directory has 265 records in 19,486 bytes with sharding and 1,813 records in 133,678 bytes without, while the 7 leading `zarr.json` records take 454 bytes in both cases.
 The synthetic measurements are local and do not include network latency; the latency of random-access chunk reads compared to an unzipped OME-Zarr has not been measured.
 
 To achieve this performance, readers are expected to:

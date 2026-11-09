@@ -269,8 +269,11 @@ We have clarified this in the RFC (including that `jsonFirst` does not assert br
 
 For the example dataset [`6001240.ozx`](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx), the central directory has 108 records in 6,154 bytes; the 4 `zarr.json` records come first and take 226 bytes. This dataset is too small for `jsonFirst` to make a noticeable difference, and its archive comment (`{"ome": {"version": "0.5"}}`) does not set it.
 The gain grows with the number of entries: on synthetic archives, the size of the central directory grows linearly with the number of entries (about 59 MB at one million entries, parsed in about 0.6 s with a minimal parser), whereas with `jsonFirst` a reader only needs the leading `zarr.json` records, whose size depends on the number of groups and arrays but not on the number of chunks or shards (see the response on performance above and the _Performance_ section of the RFC).
-We have not converted a larger, realistically sharded dataset for this response.
-Since the keys under `ome` are strictly defined by the specification and are extended by future versions of it, an additional parameter describing the order of the `zarr.json` records can be added later should a use case arise; readers that do not understand it are asked to ignore it.
+As suggested, we also converted the 4D version of the OME-TIFF sample [`tubhiswt`](https://static.webknossos.org/misc/tubhiswt-4D-sharded.ozx) (2 channels, 43 timepoints, 10 × 512 × 512 voxels, uint8) with ngff-zarr 0.52.0 into OME-Zarr zip files with three resolution levels and chunks of 10 × 128 × 128 voxels.
+It is not much larger than `6001240.ozx`: its data are of the same order of magnitude (225 MB versus 70 MB uncompressed), and its OME-Zarr zip files are in fact smaller (about 15 MB versus 39 MB, because the data compress well), but it has more chunks and therefore more entries.
+With one shard per timepoint, channel and resolution level, the archive has 265 entries and a central directory of 19,486 bytes, of which the 7 leading `zarr.json` records take 454 bytes.
+Without sharding, the same data has 1,813 entries and a central directory of 133,678 bytes, while the `zarr.json` records still take 454 bytes.
+With `jsonFirst`, a reader therefore needs about 2% (sharded) or 0.3% (unsharded) of the central directory to discover the hierarchy, and sharding makes the central directory about seven times smaller.
 
 #### Explicitly constrain ZIP options
 
