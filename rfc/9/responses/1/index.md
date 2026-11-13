@@ -558,10 +558,9 @@ The reasons given in the RFC, avoiding the compression of already compressed Zar
 
 #### Root alignment
 
-> Making root alignment a hard requirement in the RFC would allow readers to drop this detection step entirely.
+> The requirement that the OME Zarr root level `zarr.json` MUST reside at the ZIP archive root rather than in a subfolder is valuable for readers, as it allows direct access to the metadata without any need to scan the archive structure. [...] Making root alignment a hard requirement in the RFC would allow readers to drop this detection step entirely.
 
-This is already a hard requirement: the root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy, and the root-level `zarr.json` MUST be located in the root of the archive (requirement 2 in the _Specification_ section).
-Readers of OME-Zarr zip files therefore do not need to detect the root.
+Thank you; this is already requirement 2 in the _Specification_ section, both in the version of the RFC that the comment refers to and in the current one, so readers of OME-Zarr zip files do not need to detect the root.
 Archives in which the hierarchy is nested in a folder, e.g. because a directory was zipped with generic tooling, are not OME-Zarr zip files; readers may still support them as plain `.zip` files as an implementation choice (see the _Abandoned Ideas_ section of the RFC).
 
 #### `jsonFirst` reader fallback
