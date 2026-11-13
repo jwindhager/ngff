@@ -233,7 +233,9 @@ We have measured central directory costs on synthetic archives (scripts in [ngff
 > What logic is necessary in zipped OME-Zarr readers to optimize random-access read performance? [...] how would that logic be simpler/different with other non-ZIP formats, especially ones tailored more toward performance concerns?
 
 We have added this logic to the _Performance_ section of the RFC.
-Readers are expected to read the end of the file (the end of central directory records and the archive comment) with one range request of a fixed size, parse the central directory once into an index such as a hash table, so that later lookups take constant time, optionally stop early when `jsonFirst` is `true` and only the structure is needed, and then read each entry with one range request starting at its local file header.
+Readers are expected to read the end of the file (the end of central directory records and the archive comment) with one range request of a fixed size, and then the central directory with a second request if the first did not already include it.
+They parse the central directory once into an index such as a hash table, so that later lookups take constant time; if `jsonFirst` is `true` and only the structure is needed, they can stop early.
+Each entry is then read with a range request starting at its local file header.
 A purpose-built format with an index at the beginning of the file would save the request for the end of the file and, if its index were laid out for direct lookup, the one-time parse of the index; the cost of reading an individual chunk or shard once the index is known would be the same.
 With the sharding codec, the one-time parse is small (see the measurements above).
 
