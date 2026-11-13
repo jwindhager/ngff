@@ -494,7 +494,7 @@ The following ideas were abandoned:
 - **Specify ZIP as the one and only storage backend** for single-file OME-Zarr.
   This would unnecessarily limit the space for future innovation/specialization in the OME-Zarr specification.
 - **Allow readers to process generic ZIP files** that contain an OME-Zarr hierarchy but do not comply with this RFC, e.g. archives created with the default tooling of an operating system and renamed to `.ozx`.
-  Such archives typically use DEFLATE compression and place the OME-Zarr hierarchy in a folder at the archive root, violating requirements 6 and 2 (see _Specification_ section).
+  Such archives typically use DEFLATE compression for at least some entries and place the OME-Zarr hierarchy in a folder at the archive root, violating requirements 6 and 2 (see _Specification_ section).
   Since the `.ozx` extension asserts compliance with this RFC, a statement that readers MAY process non-compliant files was considered and not adopted.
   Readers remain free to support plain `.zip` files as an implementation choice, and such archives can be converted into OME-Zarr zip files by re-storing their entries with the STORE method and moving the OME-Zarr root to the archive root.
 - **Use a file extension other than `.ozx`**.
