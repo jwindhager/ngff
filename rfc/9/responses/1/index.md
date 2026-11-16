@@ -21,7 +21,7 @@ date: "2026-11-01"
 
 ## Review 1
 
-Response to [review 1](https://ngff.openmicroscopy.org/rfc/9/reviews/1/index.html) by Pete Bankhead, University of Edinburgh.
+Response to [review 1](rfcs:rfc9:review1) by Pete Bankhead, University of Edinburgh.
 
 ### Minor comments and questions
 
@@ -69,7 +69,7 @@ We have made explicit in the RFC how such a convention can compose with OME-Zarr
 
 ## Review 2
 
-Response to [review 2](https://ngff.openmicroscopy.org/rfc/9/reviews/2/index.html) by Kola Babalola and Matthew Hartley, BioImage Archive, EMBL-EBI.
+Response to [review 2](rfcs:rfc9:review2) by Kola Babalola and Matthew Hartley, BioImage Archive, EMBL-EBI.
 
 ### Significant comments and questions
 
@@ -130,7 +130,7 @@ We have referenced them in the _Tutorials and Examples_ section.
 
 ## Review 3
 
-Response to [review 3](https://ngff.openmicroscopy.org/rfc/9/reviews/3/index.html) by Curtis Rueden, University of Wisconsin-Madison.
+Response to [review 3](rfcs:rfc9:review3) by Curtis Rueden, University of Wisconsin-Madison.
 
 ### Significant comments and questions
 
@@ -328,7 +328,7 @@ Agreed; we have added this to the corresponding item in the _Abandoned Ideas_ se
 
 ## Comment 1
 
-Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.html) by Matt McCormick, Fideus Labs LLC.
+Response to [comment 1](rfcs:rfc9:comment1) by Matt McCormick, Fideus Labs LLC.
 
 ### ZIP comment flag for file ordering
 
@@ -364,7 +364,7 @@ An accidental [regression](https://github.com/ome/ngff/pull/316/commits/657b3345
 
 ## Comment 2
 
-Response to [comment 2](https://ngff.openmicroscopy.org/rfc/9/comments/2/index.html) by Joost de Folter, BioImaging-NL.
+Response to [comment 2](rfcs:rfc9:comment2) by Joost de Folter, BioImaging-NL.
 
 ### Minor comments and questions
 
@@ -381,7 +381,7 @@ Python's `zipfile` permits several entries with the same name, so rewriting a `z
 
 ## Comment 3
 
-Response to [comment 3](https://ngff.openmicroscopy.org/rfc/9/comments/3/index.html) by Chris Barnes, German BioImaging.
+Response to [comment 3](rfcs:rfc9:comment3) by Chris Barnes, German BioImaging.
 
 ### Minor comments and questions
 
@@ -415,7 +415,7 @@ In the meantime, the design leaves room for this: the keys under `ome` in the ar
 
 ## Comment 4
 
-Response to [comment 4](https://ngff.openmicroscopy.org/rfc/9/comments/4/index.html) by Lenard Spiecker and Matthias Grunwald, Miltenyi Biotec B.V. & Co. KG.
+Response to [comment 4](rfcs:rfc9:comment4) by Lenard Spiecker and Matthias Grunwald, Miltenyi Biotec B.V. & Co. KG.
 
 ### Minor comments and questions
 
@@ -492,7 +492,7 @@ We did not make a recommendation for specific implementations part of the specif
 
 ## Comment 5
 
-Response to [comment 5](https://ngff.openmicroscopy.org/rfc/9/comments/5/index.html) by Anna Kreshuk, Dominik Kutra, and Benedikt Best, Ilastik.
+Response to [comment 5](rfcs:rfc9:comment5) by Anna Kreshuk, Dominik Kutra, and Benedikt Best, Ilastik.
 
 ### Significant comments and questions
 
@@ -544,7 +544,7 @@ This typo has now been corrected.
 
 ## Comment 6
 
-Response to [comment 6](https://ngff.openmicroscopy.org/rfc/9/comments/6/index.html) by Assa Diabira, Institut Cochin (IMAG'IC / CID), Université Paris Cité, France.
+Response to [comment 6](rfcs:rfc9:comment6) by Assa Diabira, Institut Cochin (IMAG'IC / CID), Université Paris Cité, France.
 
 ### Significant comments and questions
 
