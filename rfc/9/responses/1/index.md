@@ -396,7 +396,7 @@ Unlike the comment's example, we do not restrict the intended use to small datas
 
 The demonstrations we found in the record of this RFC and elsewhere are:
 
-- the Neuroglancer and Vizarr views of the example dataset `6001240.ozx` (see the _Implementation_ and _Tutorials and Examples_ sections);
+- the Neuroglancer, OpenSeadragon/OMEZarrTileSource and Vizarr views of the example dataset `6001240.ozx` (see the _Implementation_ and _Tutorials and Examples_ sections);
 - WEBKNOSSOS, which can read OME-Zarr zip files remotely and uploaded ones ([pull request](https://github.com/scalableminds/webknossos/pull/9738), merged);
 - Zipglancer, a web-based explorer for ZIP and OME-Zarr zip files using range requests, which provides links to 51 example OME-Zarr zip files in a public bucket (all of which pass the checks for the requirements of this RFC that `check_ozx.py` can perform on the central directory, and which all use the `jsonFirst` ordering);
 - converters and test tools: the Rust converter `ozx` and the validator `ozx-tck`.
