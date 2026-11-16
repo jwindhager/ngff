@@ -8,7 +8,7 @@ date: "2025-12-12"
 
 # RFC-9: Comment 3
 
-(rfcs:rfc9:comment2)=
+(rfcs:rfc9:comment3)=
 
 ## Comment authors
 

@@ -119,9 +119,10 @@ The single-file format is designed for the following goals and non-goals, agains
 - **No fixed size limit.** The size of a file is bounded by the format in principle and by file system, object store and transfer limits in practice (see _Drawbacks, risks, alternatives, and unknowns_).
 
 #### Non-goals
-- **Streaming.** Reading a file sequentially from beginning to end, without first reading the index at its end, is not a goal (see _Access and mutability_).
+- **Streamed reading.** Reading a file sequentially from beginning to end, without first reading the index at its end, is not a goal (see _Access and mutability_). Writing a file in a single pass, including entries whose size is not known in advance, is possible, since the central directory at the end of the file records the final sizes.
 - **Recovery.** No mechanism for recovering corrupted or partially transferred files is specified (see _Access and mutability_).
 - **Encryption (excluded).** Encryption of ZIP entries or of the central directory is prohibited (see _Specification_).
+- **Fewer, but more than one, files.** Reducing an OME-Zarr to a small number of files is not a goal: this is what the sharding codec is for, in directory-backed OME-Zarr as well, and splitting an archive into multiple parts is prohibited (see _Specification_).
 
 ### The choice of ZIP
 The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage.
@@ -221,7 +222,7 @@ The OME-Zarr zip file is primarily intended as a format that is written once and
 
 - **File-centric workflows on a desktop**: opening an image from a file dialog, associating the file type with a viewer ("double click"), drag and drop, and sharing a few small images as e-mail attachments (see _Background_).
 - **Transport and archival** of OME-Zarr datasets as a single object, including large ones. The discussion of this RFC reported terabyte-scale Zarr hierarchies that are already distributed as zip, tar or squashfs files for this reason ([comment](https://github.com/ome/ngff/pull/316#issuecomment-3214762172)).
-- **Viewing and exploring remote data without downloading it**, using HTTP range requests. This is demonstrated by the viewers and example files listed in the _Implementation_ section: Neuroglancer, WEBKNOSSOS (which can read an OME-Zarr zip file remotely) and Zipglancer (which lists the contents and structure of OME-Zarr zip files using range requests).
+- **Viewing and exploring remote data without downloading it**, using HTTP range requests. This is demonstrated by the viewers and example files listed in the _Implementation_ section: Neuroglancer, OpenSeadragon/OMEZarrTileSource, Vizarr, WEBKNOSSOS (which can read an OME-Zarr zip file remotely) and Zipglancer (which lists the contents and structure of OME-Zarr zip files using range requests).
 - **Exchange between Zarr implementations**, several of which already support ZIP stores (see _Implementation_).
 
 OME-Zarr zip files are not intended for, and are not appropriate for:
@@ -374,17 +375,18 @@ Socialization: see Prior art and references; the draft was further discussed amo
 - [ozx-tck](https://github.com/clbarnes/ozx-tck) is a toolkit to validate existing .ozx files and generate valid, warning, and error test cases.
 - [ngff-zarr](https://ngff-zarr.readthedocs.io/en/latest/) is a Python-based toolkit for working with .ozx files.
 - [`check_ozx.py`](https://github.com/jwindhager/ngff-rfc9-examples) checks the MUST requirements of this RFC on a local file or a URL using range requests (see _Tutorials and Examples_).
-- A [validator](https://github.com/jwindhager/ngff-rfc9-zipped-ome-zarr/tree/main/playground/validation) based on zarr-python has been contributed by BioImaging-NL.
 
 ### Viewers
 - A [Neuroglancer view](https://neuroglancer-demo.appspot.com/#!%7B%22dimensions%22:%7B%22x%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22y%22:%5B3.6039815346402084e-7%2C%22m%22%5D%2C%22z%22:%5B5.002025531914894e-7%2C%22m%22%5D%7D%2C%22position%22:%5B135%2C137%2C118%5D%2C%22crossSectionScale%22:1%2C%22projectionScale%22:512%2C%22layers%22:%5B%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B0%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22contrast%22:%7B%22range%22:%5B7%2C907%5D%2C%22window%22:%5B0%2C1134%5D%7D%2C%22color%22:%22#ff0000%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c-0.5%22%7D%2C%7B%22type%22:%22image%22%2C%22source%22:%22https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx%7Czip:%7Czarr3:%22%2C%22localDimensions%22:%7B%22c%27%22:%5B1%2C%22%22%5D%7D%2C%22localPosition%22:%5B1%5D%2C%22tab%22:%22source%22%2C%22opacity%22:1%2C%22blend%22:%22additive%22%2C%22shader%22:%22#uicontrol%20invlerp%20contrast%5Cn#uicontrol%20vec3%20color%20color%5Cnvoid%20main%28%29%20%7B%5Cn%20%20float%20contrast_value%20=%20contrast%28%29%3B%5Cn%20%20if%20%28VOLUME_RENDERING%29%20%7B%5Cn%20%20%20%20emitRGBA%28vec4%28color%20%2A%20contrast_value%2C%20contrast_value%29%29%3B%5Cn%20%20%7D%5Cn%20%20else%20%7B%5Cn%20%20%20%20emitRGB%28color%20%2A%20contrast_value%29%3B%5Cn%20%20%7D%5Cn%7D%5Cn%22%2C%22shaderControls%22:%7B%22color%22:%22#00ff00%22%7D%2C%22volumeRenderingDepthSamples%22:256%2C%22name%22:%226001240.ozx%20c0.5%22%7D%5D%2C%22selectedLayer%22:%7B%22visible%22:true%2C%22layer%22:%226001240.ozx%20c-0.5%22%7D%2C%22layout%22:%224panel-alt%22%2C%22helpPanel%22:%7B%22row%22:2%7D%2C%22settingsPanel%22:%7B%22row%22:3%7D%2C%22toolPalettes%22:%7B%22Shader%20controls%22:%7B%22side%22:%22left%22%2C%22row%22:1%2C%22query%22:%22type:shaderControl%22%7D%7D%2C%22uiControlVisibility%22:%7B%7D%7D) of the [generated data](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx).
+- [OMEZarrTileSource](https://github.com/TissUUmaps/OMEZarrTileSource) is an [OpenSeadragon](https://openseadragon.github.io/) tile source for OME-Zarr that supports .ozx files ([example view](https://tissuumaps.github.io/OMEZarrTileSource?url=https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx&z=118&range=0,1298) of the generated data).
 - A [Vizarr view](https://biongff.github.io/vizarr/?source=https%253A%252F%252Flivingobjects.ebi.ac.uk%252Fidr%252Fzarr%252Fv0.5%252Fidr0062A%252Fozx%252F6001240.ozx) of the [generated data](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx).
 - [WEBKNOSSOS](https://github.com/scalableminds/webknossos/pull/9738) is a web-based viewing and annotation platform that supports .ozx files.
 - [Zipglancer](https://github.com/JaneliaSciComp/zipglancer) is a client-side web explorer for ZIP and .ozx archives, using HTTP range requests, that reads the `jsonFirst` setting from the archive comment.
 
 ### Example datasets
-- [6001240.ozx](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx) is the dataset shown in the Neuroglancer link above.
+- [6001240.ozx](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx) is the dataset shown in the Neuroglancer, OpenSeadragon/OMEZarrTileSource and Vizarr views above.
 - 51 example datasets (CT, MRI and simulation volumes) are provided as OME-Zarr zip files in a public bucket, `https://ome-zarr-scivis.s3.us-east-1.amazonaws.com/v0.5/96x2-ozx/<name>.ozx`, listed in [Zipglancer](https://github.com/JaneliaSciComp/zipglancer/blob/main/src/data/sciVisDatasets.ts).
+- The [DynaCell](https://arxiv.org/abs/2611.02324) benchmark provides about 865 GiB of live-cell imaging data as 30 OME-Zarr zip files of 3.5 to 97 GiB each on [AWS Open Data](https://registry.opendata.aws/dynacell/) (see the [README](https://dynacell.s3.us-west-2.amazonaws.com/v1/README.md)).
 
 ### Zarr libraries
 - [zarr-python](https://github.com/zarr-developers/zarr-python) has a ZipStore.
@@ -494,7 +496,7 @@ The following ideas were abandoned:
 - **Specify ZIP as the one and only storage backend** for single-file OME-Zarr.
   This would unnecessarily limit the space for future innovation/specialization in the OME-Zarr specification.
 - **Allow readers to process generic ZIP files** that contain an OME-Zarr hierarchy but do not comply with this RFC, e.g. archives created with the default tooling of an operating system and renamed to `.ozx`.
-  Such archives typically use DEFLATE compression and place the OME-Zarr hierarchy in a folder at the archive root, violating requirements 6 and 2 (see _Specification_ section).
+  Such archives typically use DEFLATE compression for at least some entries and place the OME-Zarr hierarchy in a folder at the archive root, violating requirements 6 and 2 (see _Specification_ section).
   Since the `.ozx` extension asserts compliance with this RFC, a statement that readers MAY process non-compliant files was considered and not adopted.
   Readers remain free to support plain `.zip` files as an implementation choice, and such archives can be converted into OME-Zarr zip files by re-storing their entries with the STORE method and moving the OME-Zarr root to the archive root.
 - **Use a file extension other than `.ozx`**.
@@ -562,7 +564,7 @@ Writers should verify that reading their OME-Zarr zip files is similarly perform
 The authors measured the cost of the central directory on synthetic archives with a minimal parser (benchmark script in [ngff-rfc9-examples](https://github.com/jwindhager/ngff-rfc9-examples)):
 its size and parsing time grow linearly with the number of entries (about 59 MB and 0.6 s at one million entries), lookups after indexing are independent of the number of entries, and with `jsonFirst` the hierarchy is discovered in a time independent of the number of entries.
 For comparison, the central directory of the example dataset `6001240.ozx` (see _Implementation_) has 108 records in 6,154 bytes, of which the 4 leading `zarr.json` records take 226 bytes.
-For the 4D `tubhiswt` OME-TIFF sample, whose data are of the same order of magnitude (225 MB uncompressed), converted to an OME-Zarr zip file with three resolution levels, the central directory has 265 records in 19,486 bytes with sharding and 1,813 records in 133,678 bytes without, while the 7 leading `zarr.json` records take 454 bytes in both cases.
+For the 4D [`tubhiswt`](https://ome-model.readthedocs.io/en/stable/ome-tiff/data.html) sample from the OME-TIFF sample data, whose data are of the same order of magnitude (225 MB uncompressed), converted to an OME-Zarr zip file with three resolution levels, the central directory has 265 records in 19,486 bytes with sharding and 1,813 records in 133,678 bytes without, while the 7 leading `zarr.json` records take 454 bytes in both cases.
 The synthetic measurements are local and do not include network latency; the latency of random-access chunk reads compared to an unzipped OME-Zarr has not been measured.
 
 To achieve this performance, readers are expected to:

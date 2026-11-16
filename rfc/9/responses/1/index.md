@@ -21,7 +21,7 @@ date: "2026-11-01"
 
 ## Review 1
 
-Response to [review 1](https://ngff.openmicroscopy.org/rfc/9/reviews/1/index.html) by Pete Bankhead, University of Edinburgh.
+Response to [review 1](rfcs:rfc9:review1) by Pete Bankhead, University of Edinburgh.
 
 ### Minor comments and questions
 
@@ -69,7 +69,7 @@ We have made explicit in the RFC how such a convention can compose with OME-Zarr
 
 ## Review 2
 
-Response to [review 2](https://ngff.openmicroscopy.org/rfc/9/reviews/2/index.html) by Kola Babalola and Matthew Hartley, BioImage Archive, EMBL-EBI.
+Response to [review 2](rfcs:rfc9:review2) by Kola Babalola and Matthew Hartley, BioImage Archive, EMBL-EBI.
 
 ### Significant comments and questions
 
@@ -130,7 +130,7 @@ We have referenced them in the _Tutorials and Examples_ section.
 
 ## Review 3
 
-Response to [review 3](https://ngff.openmicroscopy.org/rfc/9/reviews/3/index.html) by Curtis Rueden, University of Wisconsin-Madison.
+Response to [review 3](rfcs:rfc9:review3) by Curtis Rueden, University of Wisconsin-Madison.
 
 ### Significant comments and questions
 
@@ -188,7 +188,8 @@ The answers to the individual points follow.
 Streaming is not a goal.
 Like the rest of Zarr, network access is intended to use range-read requests, which are available from standard HTTP servers and object storage services such as S3.
 Client software is expected to retrieve the central directory without reading the entire archive.
-We have stated this explicitly in the RFC.
+Writing a file in a single pass, including entries whose size is not known in advance, remains possible, since the central directory at the end of the file records the final sizes.
+We have stated both explicitly in the RFC.
 Regarding the question on `jsonFirst`: it does not make offsets of all chunks available up front and is not intended to; it lets readers discover the hierarchy from the start of the central directory without parsing all of it.
 
 ##### Mutability
@@ -233,7 +234,9 @@ We have measured central directory costs on synthetic archives (scripts in [ngff
 > What logic is necessary in zipped OME-Zarr readers to optimize random-access read performance? [...] how would that logic be simpler/different with other non-ZIP formats, especially ones tailored more toward performance concerns?
 
 We have added this logic to the _Performance_ section of the RFC.
-Readers are expected to read the end of the file (the end of central directory records and the archive comment) with one range request of a fixed size, parse the central directory once into an index such as a hash table, so that later lookups take constant time, optionally stop early when `jsonFirst` is `true` and only the structure is needed, and then read each entry with one range request starting at its local file header.
+Readers are expected to read the end of the file (the end of central directory records and the archive comment) with one range request of a fixed size, and then the central directory with a second request if the first did not already include it.
+They parse the central directory once into an index such as a hash table, so that later lookups take constant time; if `jsonFirst` is `true` and only the structure is needed, they can stop early.
+Each entry is then read with a range request starting at its local file header.
 A purpose-built format with an index at the beginning of the file would save the request for the end of the file and, if its index were laid out for direct lookup, the one-time parse of the index; the cost of reading an individual chunk or shard once the index is known would be the same.
 With the sharding codec, the one-time parse is small (see the measurements above).
 
@@ -244,6 +247,7 @@ With the sharding codec, the one-time parse is small (see the measurements above
 We do not set a fixed size limit.
 The hard bound is given by the 64-bit size limits of ZIP64, which are far beyond practical sizes; in practice, very large single files are limited by file system and object store limits and by the cost of transferring or copying them.
 We have added this as a drawback, together with the guidance that a directory-backed or object store-backed OME-Zarr remains an option for very large datasets, and listed it among the design goals and non-goals.
+Files of tens of GiB are already in use: the DynaCell benchmark distributes about 865 GiB of data as 30 OME-Zarr zip files of up to 97 GiB each (see the _Implementation_ section of the RFC).
 See also the response to review 2 on recommendations on maximum archive size.
 
 ##### Use cases
@@ -284,7 +288,7 @@ We have gone through the suggested list item by item:
 
 - **Encryption (any method):** adopted. OME-Zarr zip files MUST NOT encrypt ZIP entries or the central directory. Codec-level encryption is out of scope for this RFC.
 - **Multi-volume or split archives:** already a MUST NOT in the draft (requirement 4).
-- **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents. We considered allowing readers to process generic ZIP files that do not comply with this RFC, e.g. archives created with the default tooling of an operating system (which typically use DEFLATE and place the hierarchy in a folder) and renamed to `.ozx`, and decided against it, since the `.ozx` extension asserts compliance; readers remain free to support plain `.zip` files. We have recorded this in the _Abandoned Ideas_ section of the RFC.
+- **Compression at ZIP level:** adopted. OME-Zarr zip files MUST NOT use ZIP-level compression (STORE method only), since compression is expected to be performed by Zarr-level codecs. This may be relaxed in the future, e.g. for `zarr.json` documents. We considered allowing readers to process generic ZIP files that do not comply with this RFC, e.g. archives created with the default tooling of an operating system (which typically use DEFLATE for at least some entries and place the hierarchy in a folder) and renamed to `.ozx`, and decided against it, since the `.ozx` extension asserts compliance; readers remain free to support plain `.zip` files. We have recorded this in the _Abandoned Ideas_ section of the RFC.
 - **Archive comments beyond the specified `ome` JSON:** partly adopted. The archive comment is encoded as JSON precisely so that future versions of the specification can add parameters to it, for versioning and for parameterized features. The keys under the top-level `ome` attribute are strictly defined by the specification, and we have clarified this in the RFC; readers SHOULD ignore keys under `ome` they do not understand, so that keys added in later versions do not break older readers. Other top-level keys are permitted, to allow composition with other specifications. The `jsonFirst` parameter lets viewers discover the hierarchy without parsing the whole central directory, similar to the tree views of HDF5 viewers such as HDFView or h5web; we have expanded its description in the RFC.
 - **Extra fields containing non-Zarr data:** partly adopted.
     - Most extra fields carry per-entry metadata rather than Zarr data (e.g. ZIP64 information, timestamps, Unix permissions), and a validator cannot tell what an unknown extra field contains. We therefore do not prohibit extra fields in general; readers can skip those they do not understand.
@@ -326,7 +330,7 @@ Agreed; we have added this to the corresponding item in the _Abandoned Ideas_ se
 
 ## Comment 1
 
-Response to [comment 1](https://ngff.openmicroscopy.org/rfc/9/comments/1/index.html) by Matt McCormick, Fideus Labs LLC.
+Response to [comment 1](rfcs:rfc9:comment1) by Matt McCormick, Fideus Labs LLC.
 
 ### ZIP comment flag for file ordering
 
@@ -362,7 +366,7 @@ An accidental [regression](https://github.com/ome/ngff/pull/316/commits/657b3345
 
 ## Comment 2
 
-Response to [comment 2](https://ngff.openmicroscopy.org/rfc/9/comments/2/index.html) by Joost de Folter, BioImaging-NL.
+Response to [comment 2](rfcs:rfc9:comment2) by Joost de Folter, BioImaging-NL.
 
 ### Minor comments and questions
 
@@ -379,7 +383,7 @@ Python's `zipfile` permits several entries with the same name, so rewriting a `z
 
 ## Comment 3
 
-Response to [comment 3](https://ngff.openmicroscopy.org/rfc/9/comments/3/index.html) by Chris Barnes, German BioImaging.
+Response to [comment 3](rfcs:rfc9:comment3) by Chris Barnes, German BioImaging.
 
 ### Minor comments and questions
 
@@ -394,7 +398,7 @@ Unlike the comment's example, we do not restrict the intended use to small datas
 
 The demonstrations we found in the record of this RFC and elsewhere are:
 
-- the Neuroglancer and Vizarr views of the example dataset `6001240.ozx` (see the _Implementation_ and _Tutorials and Examples_ sections);
+- the Neuroglancer, OpenSeadragon/OMEZarrTileSource and Vizarr views of the example dataset `6001240.ozx` (see the _Implementation_ and _Tutorials and Examples_ sections);
 - WEBKNOSSOS, which can read OME-Zarr zip files remotely and uploaded ones ([pull request](https://github.com/scalableminds/webknossos/pull/9738), merged);
 - Zipglancer, a web-based explorer for ZIP and OME-Zarr zip files using range requests, which provides links to 51 example OME-Zarr zip files in a public bucket (all of which pass the checks for the requirements of this RFC that `check_ozx.py` can perform on the central directory, and which all use the `jsonFirst` ordering);
 - converters and test tools: the Rust converter `ozx` and the validator `ozx-tck`.
@@ -413,7 +417,7 @@ In the meantime, the design leaves room for this: the keys under `ome` in the ar
 
 ## Comment 4
 
-Response to [comment 4](https://ngff.openmicroscopy.org/rfc/9/comments/4/index.html) by Lenard Spiecker and Matthias Grunwald, Miltenyi Biotec B.V. & Co. KG.
+Response to [comment 4](rfcs:rfc9:comment4) by Lenard Spiecker and Matthias Grunwald, Miltenyi Biotec B.V. & Co. KG.
 
 ### Minor comments and questions
 
@@ -490,7 +494,7 @@ We did not make a recommendation for specific implementations part of the specif
 
 ## Comment 5
 
-Response to [comment 5](https://ngff.openmicroscopy.org/rfc/9/comments/5/index.html) by Anna Kreshuk, Dominik Kutra, and Benedikt Best, Ilastik.
+Response to [comment 5](rfcs:rfc9:comment5) by Anna Kreshuk, Dominik Kutra, and Benedikt Best, Ilastik.
 
 ### Significant comments and questions
 
@@ -542,7 +546,7 @@ This typo has now been corrected.
 
 ## Comment 6
 
-Response to [comment 6](https://ngff.openmicroscopy.org/rfc/9/comments/6/index.html) by Assa Diabira, Institut Cochin (IMAG'IC / CID), Université Paris Cité, France.
+Response to [comment 6](rfcs:rfc9:comment6) by Assa Diabira, Institut Cochin (IMAG'IC / CID), Université Paris Cité, France.
 
 ### Significant comments and questions
 
@@ -556,10 +560,9 @@ The reasons given in the RFC, avoiding the compression of already compressed Zar
 
 #### Root alignment
 
-> Making root alignment a hard requirement in the RFC would allow readers to drop this detection step entirely.
+> The requirement that the OME Zarr root level `zarr.json` MUST reside at the ZIP archive root rather than in a subfolder is valuable for readers, as it allows direct access to the metadata without any need to scan the archive structure. [...] Making root alignment a hard requirement in the RFC would allow readers to drop this detection step entirely.
 
-This is already a hard requirement: the root of the ZIP archive MUST correspond to the root of the OME-Zarr hierarchy, and the root-level `zarr.json` MUST be located in the root of the archive (requirement 2 in the _Specification_ section).
-Readers of OME-Zarr zip files therefore do not need to detect the root.
+Thank you; this is already requirement 2 in the _Specification_ section, both in the version of the RFC that the comment refers to and in the current one, so readers of OME-Zarr zip files do not need to detect the root.
 Archives in which the hierarchy is nested in a folder, e.g. because a directory was zipped with generic tooling, are not OME-Zarr zip files; readers may still support them as plain `.zip` files as an implementation choice (see the _Abandoned Ideas_ section of the RFC).
 
 #### `jsonFirst` reader fallback
