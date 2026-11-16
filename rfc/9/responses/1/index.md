@@ -188,7 +188,8 @@ The answers to the individual points follow.
 Streaming is not a goal.
 Like the rest of Zarr, network access is intended to use range-read requests, which are available from standard HTTP servers and object storage services such as S3.
 Client software is expected to retrieve the central directory without reading the entire archive.
-We have stated this explicitly in the RFC.
+Writing a file in a single pass, including entries whose size is not known in advance, remains possible, since the central directory at the end of the file records the final sizes.
+We have stated both explicitly in the RFC.
 Regarding the question on `jsonFirst`: it does not make offsets of all chunks available up front and is not intended to; it lets readers discover the hierarchy from the start of the central directory without parsing all of it.
 
 ##### Mutability

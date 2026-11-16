@@ -119,9 +119,10 @@ The single-file format is designed for the following goals and non-goals, agains
 - **No fixed size limit.** The size of a file is bounded by the format in principle and by file system, object store and transfer limits in practice (see _Drawbacks, risks, alternatives, and unknowns_).
 
 #### Non-goals
-- **Streaming.** Reading a file sequentially from beginning to end, without first reading the index at its end, is not a goal (see _Access and mutability_).
+- **Streamed reading.** Reading a file sequentially from beginning to end, without first reading the index at its end, is not a goal (see _Access and mutability_). Writing a file in a single pass, including entries whose size is not known in advance, is possible, since the central directory at the end of the file records the final sizes.
 - **Recovery.** No mechanism for recovering corrupted or partially transferred files is specified (see _Access and mutability_).
 - **Encryption (excluded).** Encryption of ZIP entries or of the central directory is prohibited (see _Specification_).
+- **Fewer, but more than one, files.** Reducing an OME-Zarr to a small number of files is not a goal: this is what the sharding codec is for, in directory-backed OME-Zarr as well, and splitting an archive into multiple parts is prohibited (see _Specification_).
 
 ### The choice of ZIP
 The ZIP archive file format was chosen for its widespread adoption (e.g. library support in many programming languages, existing OME-Zarr implementations) and possibility for chunked file access enabled by its central directory, even on remote storage.
