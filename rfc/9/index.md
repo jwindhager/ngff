@@ -385,6 +385,7 @@ Socialization: see Prior art and references; the draft was further discussed amo
 ### Example datasets
 - [6001240.ozx](https://livingobjects.ebi.ac.uk/idr/zarr/v0.5/idr0062A/ozx/6001240.ozx) is the dataset shown in the Neuroglancer, OpenSeadragon/OMEZarrTileSource and Vizarr views above.
 - 51 example datasets (CT, MRI and simulation volumes) are provided as OME-Zarr zip files in a public bucket, `https://ome-zarr-scivis.s3.us-east-1.amazonaws.com/v0.5/96x2-ozx/<name>.ozx`, listed in [Zipglancer](https://github.com/JaneliaSciComp/zipglancer/blob/main/src/data/sciVisDatasets.ts).
+- The [DynaCell](https://arxiv.org/abs/2611.02324) benchmark provides about 865 GiB of live-cell imaging data as 30 OME-Zarr zip files of 3.5 to 97 GiB each on [AWS Open Data](https://registry.opendata.aws/dynacell/) (see the [README](https://dynacell.s3.us-west-2.amazonaws.com/v1/README.md)).
 
 ### Zarr libraries
 - [zarr-python](https://github.com/zarr-developers/zarr-python) has a ZipStore.

@@ -246,6 +246,7 @@ With the sharding codec, the one-time parse is small (see the measurements above
 We do not set a fixed size limit.
 The hard bound is given by the 64-bit size limits of ZIP64, which are far beyond practical sizes; in practice, very large single files are limited by file system and object store limits and by the cost of transferring or copying them.
 We have added this as a drawback, together with the guidance that a directory-backed or object store-backed OME-Zarr remains an option for very large datasets, and listed it among the design goals and non-goals.
+Files of tens of GiB are already in use: the DynaCell benchmark distributes about 865 GiB of data as 30 OME-Zarr zip files of up to 97 GiB each (see the _Implementation_ section of the RFC).
 See also the response to review 2 on recommendations on maximum archive size.
 
 ##### Use cases
