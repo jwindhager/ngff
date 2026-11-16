@@ -524,6 +524,7 @@ We have therefore kept "hierarchy", and the RFC now defines the term "OME-Zarr h
 
 Regarding the possible roots: this RFC defers them to the OME-Zarr specification as a whole and neither adds restrictions nor adds possibilities. It does not restrict the contents of the OME-Zarr that is stored, semantically or otherwise (see the item on semantic restrictions in the _Abandoned Ideas_ section), so the root of the archive is the root of whatever OME-Zarr hierarchy the specification permits, now or in the future.
 This avoids tying the single-file format to the set of root types of a particular version of the specification, which may be extended by the collections RFC.
+The RFC now also states how OME-Zarr zip files relate to collections: OME-Zarr zip files MUST NOT be used as sub-hierarchies of a parent OME-Zarr hierarchy, while references to them are not affected.
 
 #### Avoid appending
 
